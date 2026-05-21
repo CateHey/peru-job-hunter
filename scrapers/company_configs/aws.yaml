@@ -1,0 +1,9 @@
+name: Amazon Web Services
+careers_url: "https://www.amazon.jobs"
+search_url_pattern: "https://www.amazon.jobs/en/search?base_query={keyword}&loc_query=Peru"
+requires_js: false
+selectors:
+  job_card: "div.job-tile, div[class*='job-card']"
+  title: "h3.job-title a, h3"
+  location: "span.location-and-id, p[class*='location']"
+  link: "h3.job-title a, a"

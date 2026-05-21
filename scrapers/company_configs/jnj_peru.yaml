@@ -1,0 +1,9 @@
+name: Johnson & Johnson Peru
+careers_url: "https://www.careers.jnj.com"
+search_url_pattern: "https://www.careers.jnj.com/en/jobs?search={keyword}&location=Peru&radius=100"
+requires_js: true
+selectors:
+  job_card: "div[class*='job-card'], li[class*='job-tile']"
+  title: "h3, a[class*='title']"
+  location: "span[class*='location']"
+  link: "a"

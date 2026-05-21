@@ -1,0 +1,9 @@
+name: Microsoft
+careers_url: "https://careers.microsoft.com"
+search_url_pattern: "https://jobs.careers.microsoft.com/global/en/search?q={keyword}&l=Peru&lc=Peru"
+requires_js: true
+selectors:
+  job_card: "div[class*='ms-List-cell'], li[class*='job']"
+  title: "h2, a[aria-label]"
+  location: "span[class*='location'], div[class*='subText']"
+  link: "a"

@@ -1,0 +1,112 @@
+profile:
+  name: "Junior Infraestructura TI"
+  description: >
+    Profesional buscando su primer puesto junior en Infraestructura de TI.
+    Areas de interes: Administracion de Sistemas, Redes, Cloud Computing,
+    DevOps, Soporte Tecnico, Help Desk avanzado.
+  target_roles:
+    - "junior sysadmin"
+    - "administrador sistemas junior"
+    - "junior cloud"
+    - "junior DevOps"
+    - "ingeniero redes junior"
+    - "help desk"
+    - "soporte tecnico nivel 2"
+    - "infraestructura TI"
+    - "junior AWS"
+    - "junior Azure"
+    - "analista infraestructura"
+    - "tecnico redes"
+  skills:
+    - "Windows Server"
+    - "Linux"
+    - "Active Directory"
+    - "DNS"
+    - "DHCP"
+    - "TCP/IP"
+    - "VPN"
+    - "Firewall"
+    - "AWS"
+    - "Azure"
+    - "Docker"
+    - "VMware"
+    - "Hyper-V"
+    - "Cisco"
+    - "Mikrotik"
+    - "PowerShell"
+    - "Bash"
+    - "Python"
+    - "Git"
+    - "Terraform"
+    - "Ansible"
+    - "ITIL"
+    - "Monitoreo (Zabbix/Nagios)"
+  education: "Ingenieria de Sistemas / Informatica o afines"
+  experience_level: "junior"
+  preferred_locations:
+    - "Lima"
+    - "Peru"
+    - "Remoto"
+
+search:
+  max_results_per_source: 50
+  max_age_days: 30
+  sources:
+    - name: computrabajo
+      enabled: true
+      search_terms:
+        - "junior sysadmin"
+        - "administrador sistemas junior"
+        - "soporte tecnico"
+        - "help desk"
+        - "infraestructura TI"
+        - "ingeniero redes junior"
+        - "junior cloud"
+        - "junior DevOps"
+        - "analista infraestructura"
+        - "tecnico redes"
+    - name: linkedin
+      enabled: true
+      search_terms:
+        - "junior IT infrastructure Peru"
+        - "sysadmin junior Lima"
+        - "junior DevOps Peru"
+        - "junior cloud engineer Peru"
+        - "help desk Lima"
+    - name: indeed
+      enabled: true
+      search_terms:
+        - "sysadmin junior"
+        - "soporte tecnico"
+        - "infraestructura TI"
+        - "junior DevOps"
+    - name: bumeran
+      enabled: false
+      search_terms:
+        - "soporte tecnico"
+        - "administrador sistemas"
+    - name: gobierno
+      enabled: true
+      search_terms:
+        - "soporte tecnico"
+        - "infraestructura"
+    - name: company_careers
+      enabled: true
+      companies:
+        - claro_peru
+        - movistar
+        - entel
+        - ibm
+        - hp
+        - cisco
+        - aws
+        - bbva
+        - bcp
+      search_terms:
+        - "junior"
+        - "infrastructure"
+        - "sysadmin"
+
+claude:
+  model: "claude-haiku-4-5-20251001"
+  max_tokens: 512

@@ -1,0 +1,9 @@
+name: Claro Peru
+careers_url: "https://www.claro.com.pe"
+search_url_pattern: "https://www.claro.com.pe/personas/trabaja-con-nosotros/?q={keyword}"
+requires_js: true
+selectors:
+  job_card: "div[class*='vacancy'], div[class*='job'], li[class*='position']"
+  title: "h3, h4, a[class*='title']"
+  location: "span[class*='location']"
+  link: "a"

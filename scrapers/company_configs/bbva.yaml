@@ -1,0 +1,9 @@
+name: BBVA Peru
+careers_url: "https://www.bbva.com/es/pe/trabaja-con-nosotros/"
+search_url_pattern: "https://bbva.csod.com/ux/ats/careersite/2/home?c=bbva&sq={keyword}&l=Peru"
+requires_js: true
+selectors:
+  job_card: "div[class*='opportunity-card'], li[class*='result']"
+  title: "h3, a[class*='title']"
+  location: "span[class*='location']"
+  link: "a"

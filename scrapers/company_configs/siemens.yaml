@@ -1,0 +1,9 @@
+name: Siemens
+careers_url: "https://jobs.siemens.com"
+search_url_pattern: "https://jobs.siemens.com/careers?query={keyword}&location=Peru&department=Engineering"
+requires_js: true
+selectors:
+  job_card: ".job-card, div[data-ph-at='job-card']"
+  title: ".job-card__title, h3"
+  location: ".job-card__location, span[data-ph-at='job-location']"
+  link: "a"

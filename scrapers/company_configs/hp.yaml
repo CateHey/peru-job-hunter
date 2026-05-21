@@ -1,0 +1,9 @@
+name: HP Inc
+careers_url: "https://jobs.hp.com"
+search_url_pattern: "https://jobs.hp.com/en-us/search-results?keywords={keyword}&location=Peru"
+requires_js: true
+selectors:
+  job_card: "li[class*='job-card'], div[class*='search-result']"
+  title: "h3, a[class*='job-title']"
+  location: "span[class*='location']"
+  link: "a"

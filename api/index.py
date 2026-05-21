@@ -1,0 +1,199 @@
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+import sys
+from pathlib import Path
+
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from shared.claude_analyzer import analyze_single_job, is_api_available
+from shared.config_loader import load_config
+from shared.deduplicator import deduplicate_jobs
+from shared.models import EnrichedJob, Job
+from shared.rate_limiter import RateLimiter
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+PROFILES = {
+    "mechatronics": BASE_DIR / "mechatronics_hunter" / "config.yaml",
+    "infra": BASE_DIR / "infra_hunter" / "config.yaml",
+}
+
+rate_limiter = RateLimiter(min_delay=1.0, max_delay=2.0)
+
+
+def _jobs_to_dicts(jobs: list[Job]) -> list[dict]:
+    return [j.model_dump(mode="json") for j in jobs]
+
+
+def _enriched_to_dicts(enriched: list[EnrichedJob]) -> list[dict]:
+    results = []
+    for ej in enriched:
+        d = ej.job.model_dump(mode="json")
+        d["analysis"] = ej.analysis.model_dump(mode="json") if ej.analysis else None
+        d["score"] = ej.score
+        d["rec"] = ej.rec
+        results.append(d)
+    return results
+
+
+@app.get("/api/profiles")
+async def get_profiles():
+    profiles = {}
+    for name, path in PROFILES.items():
+        try:
+            config = load_config(path)
+            profiles[name] = {
+                "name": config.profile.name,
+                "description": config.profile.description,
+                "sources": [
+                    {"name": s.name, "enabled": s.enabled}
+                    for s in config.search.sources
+                ],
+            }
+        except Exception as e:
+            profiles[name] = {"error": str(e)}
+
+    return {"profiles": profiles, "claude_available": is_api_available()}
+
+
+@app.get("/api/search/{profile}/{source}")
+async def search_source(
+    profile: str,
+    source: str,
+    max_pages: int = Query(default=2, ge=1, le=5),
+):
+    if profile not in PROFILES:
+        return JSONResponse({"error": f"Perfil '{profile}' no encontrado"}, status_code=404)
+
+    config = load_config(PROFILES[profile])
+    source_config = next((s for s in config.search.sources if s.name == source), None)
+
+    if not source_config:
+        return JSONResponse({"error": f"Fuente '{source}' no encontrada en perfil"}, status_code=404)
+
+    if not source_config.enabled and source not in ("computrabajo", "linkedin", "indeed"):
+        return JSONResponse({"error": f"Fuente '{source}' deshabilitada"}, status_code=400)
+
+    jobs: list[Job] = []
+
+    try:
+        if source == "computrabajo":
+            from scrapers.computrabajo import CompuTrabajoScraper
+            scraper = CompuTrabajoScraper(rate_limiter, max_pages=max_pages)
+            jobs = await scraper.search_all_terms(source_config.search_terms[:3])
+
+        elif source == "linkedin":
+            from scrapers.linkedin_guest import LinkedInGuestScraper
+            scraper = LinkedInGuestScraper(rate_limiter, max_pages=max_pages)
+            jobs = await scraper.search_all_terms(source_config.search_terms[:3])
+
+        elif source == "indeed":
+            from scrapers.indeed_jobspy import IndeedJobSpyScraper
+            scraper = IndeedJobSpyScraper(rate_limiter, results_wanted=30)
+            jobs = await scraper.search_all_terms(source_config.search_terms[:2])
+
+        else:
+            return JSONResponse(
+                {"error": f"Fuente '{source}' no soportada en modo web (requiere Selenium)"},
+                status_code=400,
+            )
+
+    except Exception as e:
+        return JSONResponse({"error": str(e), "jobs": []}, status_code=200)
+
+    return {"source": source, "count": len(jobs), "jobs": _jobs_to_dicts(jobs)}
+
+
+@app.get("/api/search/{profile}")
+async def search_all(profile: str):
+    if profile not in PROFILES:
+        return JSONResponse({"error": f"Perfil '{profile}' no encontrado"}, status_code=404)
+
+    config = load_config(PROFILES[profile])
+    all_jobs: list[Job] = []
+    source_results = {}
+
+    web_sources = ["computrabajo", "linkedin", "indeed"]
+
+    for sc in config.search.sources:
+        if sc.name not in web_sources or not sc.enabled:
+            continue
+
+        try:
+            if sc.name == "computrabajo":
+                from scrapers.computrabajo import CompuTrabajoScraper
+                scraper = CompuTrabajoScraper(rate_limiter, max_pages=2)
+                jobs = await scraper.search_all_terms(sc.search_terms[:3])
+
+            elif sc.name == "linkedin":
+                from scrapers.linkedin_guest import LinkedInGuestScraper
+                scraper = LinkedInGuestScraper(rate_limiter, max_pages=2)
+                jobs = await scraper.search_all_terms(sc.search_terms[:3])
+
+            elif sc.name == "indeed":
+                from scrapers.indeed_jobspy import IndeedJobSpyScraper
+                scraper = IndeedJobSpyScraper(rate_limiter, results_wanted=30)
+                jobs = await scraper.search_all_terms(sc.search_terms[:2])
+            else:
+                continue
+
+            source_results[sc.name] = len(jobs)
+            all_jobs.extend(jobs)
+
+        except Exception as e:
+            source_results[sc.name] = f"error: {e}"
+
+    all_jobs = deduplicate_jobs(all_jobs)
+
+    return {
+        "profile": config.profile.name,
+        "total": len(all_jobs),
+        "sources": source_results,
+        "jobs": _jobs_to_dicts(all_jobs),
+        "claude_available": is_api_available(),
+    }
+
+
+@app.post("/api/analyze")
+async def analyze_job_endpoint(payload: dict):
+    if not is_api_available():
+        return JSONResponse(
+            {"error": "ANTHROPIC_API_KEY no configurada", "analysis": None},
+            status_code=200,
+        )
+
+    profile_key = payload.get("profile", "mechatronics")
+    if profile_key not in PROFILES:
+        return JSONResponse({"error": "Perfil no encontrado"}, status_code=404)
+
+    config = load_config(PROFILES[profile_key])
+
+    try:
+        job = Job(**payload["job"])
+    except Exception as e:
+        return JSONResponse({"error": f"Job invalido: {e}"}, status_code=400)
+
+    enriched = analyze_single_job(
+        job,
+        config.profile,
+        model=config.claude.get("model", "claude-haiku-4-5-20251001"),
+    )
+
+    result = enriched.analysis.model_dump(mode="json") if enriched.analysis else None
+    return {"analysis": result}

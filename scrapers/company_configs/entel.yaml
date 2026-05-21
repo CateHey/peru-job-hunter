@@ -1,0 +1,9 @@
+name: Entel Peru
+careers_url: "https://www.entel.pe"
+search_url_pattern: "https://www.entel.pe/trabaja-con-nosotros/?search={keyword}"
+requires_js: true
+selectors:
+  job_card: "div[class*='job'], div[class*='vacancy']"
+  title: "h3, h4"
+  location: "span[class*='location']"
+  link: "a"

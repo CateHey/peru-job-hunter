@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ profile_name }} - Peru Job Hunter</title>
+<style>
+:root {
+  --bg: #0f172a; --surface: #1e293b; --surface2: #334155; --text: #e2e8f0;
+  --text-muted: #94a3b8; --accent: #3b82f6; --green: #22c55e; --yellow: #eab308;
+  --red: #ef4444; --border: #475569;
+}
+[data-theme="light"] {
+  --bg: #f1f5f9; --surface: #ffffff; --surface2: #e2e8f0; --text: #1e293b;
+  --text-muted: #64748b; --accent: #2563eb; --green: #16a34a; --yellow: #ca8a04;
+  --red: #dc2626; --border: #cbd5e1;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+/* Header */
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 24px; margin-bottom: 24px; border-radius: 12px; }
+header h1 { font-size: 1.5rem; margin-bottom: 4px; }
+header .subtitle { color: var(--text-muted); font-size: 0.9rem; }
+.theme-toggle { float: right; cursor: pointer; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: var(--surface); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid var(--border); }
+.stat-card .number { font-size: 2rem; font-weight: 700; }
+.stat-card .label { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-card.apply .number { color: var(--green); }
+.stat-card.consider .number { color: var(--yellow); }
+.stat-card.skip .number { color: var(--red); }
+
+/* Filters */
+.filters { background: var(--surface); padding: 16px; border-radius: 10px; margin-bottom: 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; border: 1px solid var(--border); }
+.filters label { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+.filters select, .filters input { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+
+/* Job cards */
+.jobs-grid { display: grid; gap: 16px; }
+.job-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; transition: transform 0.15s, box-shadow 0.15s; }
+.job-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.job-card .top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+.job-card h3 { font-size: 1.1rem; }
+.job-card h3 a { color: var(--accent); text-decoration: none; }
+.job-card h3 a:hover { text-decoration: underline; }
+.job-card .company { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 4px; }
+.job-card .meta { display: flex; gap: 12px; flex-wrap: wrap; color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px; }
+.job-card .meta span::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; background: var(--border); vertical-align: middle; }
+.job-card .summary { font-size: 0.9rem; margin-bottom: 12px; line-height: 1.5; }
+
+/* Score badge */
+.score-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; white-space: nowrap; flex-shrink: 0; }
+.score-badge.apply { background: rgba(34,197,94,0.15); color: var(--green); }
+.score-badge.consider { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.score-badge.skip { background: rgba(239,68,68,0.15); color: var(--red); }
+.score-badge.unscored { background: var(--surface2); color: var(--text-muted); }
+
+/* Tags */
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+.tag.match { background: rgba(34,197,94,0.15); color: var(--green); }
+.tag.miss { background: rgba(239,68,68,0.1); color: var(--red); }
+.tag.source { background: rgba(59,130,246,0.15); color: var(--accent); }
+
+/* Empty state */
+.empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.empty h2 { margin-bottom: 8px; }
+
+.job-count { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px; }
+
+@media (max-width: 640px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .filters { flex-direction: column; }
+  .job-card .top-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <button class="theme-toggle" onclick="toggleTheme()">Cambiar Tema</button>
+    <h1>{{ profile_name }}</h1>
+    <p class="subtitle">Generado el {{ run_date }} &mdash; {{ total_jobs }} trabajos encontrados en {{ sources_count }} fuentes</p>
+  </header>
+
+  <div class="stats">
+    <div class="stat-card"><div class="number">{{ total_jobs }}</div><div class="label">Total</div></div>
+    <div class="stat-card apply"><div class="number">{{ apply_count }}</div><div class="label">Postular Ya</div></div>
+    <div class="stat-card consider"><div class="number">{{ consider_count }}</div><div class="label">Considerar</div></div>
+    <div class="stat-card skip"><div class="number">{{ skip_count }}</div><div class="label">Omitir</div></div>
+    <div class="stat-card"><div class="number">{{ unscored_count }}</div><div class="label">Sin Evaluar</div></div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <label>Recomendacion</label>
+      <select id="filterRec" onchange="applyFilters()">
+        <option value="all">Todas</option>
+        <option value="APPLY_NOW">Postular Ya</option>
+        <option value="CONSIDER">Considerar</option>
+        <option value="SKIP">Omitir</option>
+        <option value="UNSCORED">Sin Evaluar</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Fuente</label>
+      <select id="filterSource" onchange="applyFilters()">
+        <option value="all">Todas</option>
+        {% for source in all_sources %}
+        <option value="{{ source }}">{{ source }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Buscar</label>
+      <input type="text" id="filterSearch" placeholder="Titulo, empresa..." oninput="applyFilters()">
+    </div>
+  </div>
+
+  <p class="job-count" id="jobCount">Mostrando {{ total_jobs }} trabajos</p>
+
+  <div class="jobs-grid" id="jobsGrid">
+    {% for ej in enriched_jobs %}
+    <div class="job-card"
+         data-rec="{{ ej.rec }}"
+         data-source="{{ ej.job.source.value }}"
+         data-search="{{ ej.job.title|lower }} {{ ej.job.company|lower }}">
+      <div class="top-row">
+        <div>
+          <h3><a href="{{ ej.job.url }}" target="_blank" rel="noopener">{{ ej.job.title }}</a></h3>
+          <p class="company">{{ ej.job.company }}</p>
+        </div>
+        {% if ej.analysis %}
+        <span class="score-badge {% if ej.analysis.recommendation.value == 'APPLY_NOW' %}apply{% elif ej.analysis.recommendation.value == 'CONSIDER' %}consider{% else %}skip{% endif %}">
+          {{ ej.analysis.relevance_score }}/100
+        </span>
+        {% else %}
+        <span class="score-badge unscored">--</span>
+        {% endif %}
+      </div>
+      <div class="meta">
+        {% if ej.job.location %}<span>{{ ej.job.location }}</span>{% endif %}
+        {% if ej.job.date_posted %}<span>{{ ej.job.date_posted.strftime('%d/%m/%Y') }}</span>{% endif %}
+        {% if ej.job.salary %}<span>{{ ej.job.salary }}</span>{% endif %}
+        {% if ej.job.job_type.value != 'unknown' %}<span>{{ ej.job.job_type.value }}</span>{% endif %}
+      </div>
+      {% if ej.analysis and ej.analysis.summary %}
+      <p class="summary">{{ ej.analysis.summary }}</p>
+      {% elif ej.job.description %}
+      <p class="summary">{{ ej.job.description[:200] }}{% if ej.job.description|length > 200 %}...{% endif %}</p>
+      {% endif %}
+      <div class="tags">
+        {% if ej.analysis %}
+          {% for skill in ej.analysis.matching_skills[:6] %}
+          <span class="tag match">{{ skill }}</span>
+          {% endfor %}
+          {% for skill in ej.analysis.missing_skills[:3] %}
+          <span class="tag miss">{{ skill }}</span>
+          {% endfor %}
+        {% endif %}
+        {% for src in ej.job.sources_found %}
+        <span class="tag source">{{ src }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if not enriched_jobs %}
+  <div class="empty">
+    <h2>No se encontraron trabajos</h2>
+    <p>Intenta modificar los terminos de busqueda en el archivo config.yaml</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+function toggleTheme() {
+  const body = document.body;
+  body.dataset.theme = body.dataset.theme === 'light' ? '' : 'light';
+}
+
+function applyFilters() {
+  const rec = document.getElementById('filterRec').value;
+  const source = document.getElementById('filterSource').value;
+  const search = document.getElementById('filterSearch').value.toLowerCase();
+  const cards = document.querySelectorAll('.job-card');
+  let visible = 0;
+
+  cards.forEach(card => {
+    let show = true;
+    if (rec !== 'all' && card.dataset.rec !== rec) show = false;
+    if (source !== 'all' && card.dataset.source !== source) show = false;
+    if (search && !card.dataset.search.includes(search)) show = false;
+
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  document.getElementById('jobCount').textContent = `Mostrando ${visible} trabajos`;
+}
+</script>
+</body>
+</html>

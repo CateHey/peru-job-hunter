@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+mechatronics_hunter/output/
+infra_hunter/output/
+*.log

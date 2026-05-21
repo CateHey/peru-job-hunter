@@ -1,0 +1,9 @@
+name: Cisco
+careers_url: "https://jobs.cisco.com"
+search_url_pattern: "https://jobs.cisco.com/jobs/SearchJobs/?q={keyword}&location=Peru"
+requires_js: true
+selectors:
+  job_card: "tr[class*='data-row'], li[class*='job']"
+  title: "a.jobTitle-link, h3"
+  location: "span.jobLocation"
+  link: "a.jobTitle-link, a"

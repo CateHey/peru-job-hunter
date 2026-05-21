@@ -1,0 +1,9 @@
+name: Rockwell Automation
+careers_url: "https://rockwellautomation.wd1.myworkdayjobs.com"
+search_url_pattern: "https://rockwellautomation.wd1.myworkdayjobs.com/en-US/External_Rockwell_Automation?q={keyword}&locations=Peru"
+requires_js: true
+selectors:
+  job_card: "li[class*='css-'], section[data-automation-id='jobResults'] li"
+  title: "a[data-automation-id='jobTitle'], h3"
+  location: "dd[class*='css-'], div[data-automation-id='locations']"
+  link: "a[data-automation-id='jobTitle']"

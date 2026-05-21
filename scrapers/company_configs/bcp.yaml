@@ -1,0 +1,9 @@
+name: BCP - Banco de Credito del Peru
+careers_url: "https://www.viabcp.com"
+search_url_pattern: "https://empleos.viabcp.com/search/?q={keyword}"
+requires_js: true
+selectors:
+  job_card: "tr.data-row, div[class*='job']"
+  title: "a.jobTitle-link, h3"
+  location: "span.jobLocation"
+  link: "a.jobTitle-link, a"

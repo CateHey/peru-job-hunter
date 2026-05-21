@@ -1,0 +1,9 @@
+name: IBM
+careers_url: "https://www.ibm.com/careers"
+search_url_pattern: "https://www.ibm.com/careers/search?field_keyword_18[0]={keyword}&field_keyword_05[0]=Peru"
+requires_js: true
+selectors:
+  job_card: "div[class*='job-card'], li[class*='result']"
+  title: "h3, a[class*='title']"
+  location: "span[class*='location']"
+  link: "a"

@@ -1,0 +1,9 @@
+name: Movistar / Telefonica Peru
+careers_url: "https://jobs.telefonica.com"
+search_url_pattern: "https://jobs.telefonica.com/search/?q={keyword}&locationsearch=Peru"
+requires_js: true
+selectors:
+  job_card: "tr.data-row, div[class*='job-result']"
+  title: "a.jobTitle-link, h3"
+  location: "span.jobLocation, td.colLocation"
+  link: "a.jobTitle-link, a"

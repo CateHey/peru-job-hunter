@@ -1,0 +1,9 @@
+name: ABB
+careers_url: "https://careers.abb"
+search_url_pattern: "https://careers.abb/global/en/search-results?keywords={keyword}&location=Peru"
+requires_js: true
+selectors:
+  job_card: ".job-card, li[data-ph-at='job-card']"
+  title: ".job-card__title, h3 a"
+  location: ".job-card__location, span.job-location"
+  link: "a"

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peru Job Hunter</title>
+<style>
+:root {
+  --bg: #0f172a; --surface: #1e293b; --surface2: #334155; --text: #e2e8f0;
+  --text-muted: #94a3b8; --accent: #3b82f6; --green: #22c55e; --yellow: #eab308;
+  --red: #ef4444; --border: #475569;
+}
+[data-theme="light"] {
+  --bg: #f1f5f9; --surface: #ffffff; --surface2: #e2e8f0; --text: #1e293b;
+  --text-muted: #64748b; --accent: #2563eb; --green: #16a34a; --yellow: #ca8a04;
+  --red: #dc2626; --border: #cbd5e1;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+header { background: var(--surface); padding: 24px; margin-bottom: 24px; border-radius: 12px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+header h1 { font-size: 1.5rem; }
+header .subtitle { color: var(--text-muted); font-size: 0.85rem; }
+.header-actions { display: flex; gap: 8px; }
+.btn { cursor: pointer; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; font-weight: 600; transition: all 0.15s; }
+.btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary { background: var(--surface2); color: var(--text); }
+.btn-secondary:hover { background: var(--border); }
+
+.profiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.profile-card { background: var(--surface); padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+.profile-card h2 { font-size: 1.2rem; margin-bottom: 6px; }
+.profile-card p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px; }
+.profile-card .sources { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.source-badge { padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; background: rgba(59,130,246,0.15); color: var(--accent); }
+.source-badge.disabled { opacity: 0.4; }
+
+.status-bar { background: var(--surface); padding: 16px 20px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--border); display: none; }
+.status-bar.visible { display: block; }
+.status-text { font-size: 0.9rem; }
+.progress-bar { height: 4px; background: var(--surface2); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; width: 0%; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 24px; display: none; }
+.stats.visible { display: grid; }
+.stat-card { background: var(--surface); padding: 14px; border-radius: 10px; text-align: center; border: 1px solid var(--border); }
+.stat-card .number { font-size: 1.8rem; font-weight: 700; }
+.stat-card .label { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-card.apply .number { color: var(--green); }
+.stat-card.consider .number { color: var(--yellow); }
+.stat-card.skip .number { color: var(--red); }
+
+.filters { background: var(--surface); padding: 14px; border-radius: 10px; margin-bottom: 16px; display: none; gap: 12px; flex-wrap: wrap; align-items: center; border: 1px solid var(--border); }
+.filters.visible { display: flex; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filters label { color: var(--text-muted); font-size: 0.8rem; font-weight: 600; }
+.filters select, .filters input { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; }
+
+.jobs-grid { display: grid; gap: 14px; }
+.job-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; transition: transform 0.15s, box-shadow 0.15s; }
+.job-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.job-card .top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+.job-card h3 { font-size: 1.05rem; }
+.job-card h3 a { color: var(--accent); text-decoration: none; }
+.job-card h3 a:hover { text-decoration: underline; }
+.job-card .company { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 4px; }
+.job-card .meta { display: flex; gap: 10px; flex-wrap: wrap; color: var(--text-muted); font-size: 0.78rem; margin-bottom: 8px; }
+.job-card .meta span::before { content: ''; display: inline-block; width: 5px; height: 5px; border-radius: 50%; margin-right: 5px; background: var(--border); vertical-align: middle; }
+.job-card .summary { font-size: 0.85rem; margin-bottom: 10px; line-height: 1.5; color: var(--text-muted); }
+.score-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 16px; font-weight: 700; font-size: 0.8rem; white-space: nowrap; flex-shrink: 0; }
+.score-badge.apply { background: rgba(34,197,94,0.15); color: var(--green); }
+.score-badge.consider { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.score-badge.skip { background: rgba(239,68,68,0.15); color: var(--red); }
+.score-badge.unscored { background: var(--surface2); color: var(--text-muted); }
+.score-badge.analyzing { background: rgba(59,130,246,0.15); color: var(--accent); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+.tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.tag { padding: 2px 7px; border-radius: 4px; font-size: 0.7rem; }
+.tag.match { background: rgba(34,197,94,0.15); color: var(--green); }
+.tag.miss { background: rgba(239,68,68,0.1); color: var(--red); }
+.tag.source { background: rgba(59,130,246,0.15); color: var(--accent); }
+
+.claude-banner { background: rgba(59,130,246,0.1); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: none; font-size: 0.85rem; }
+.claude-banner.visible { display: block; }
+.claude-banner.no-key { background: rgba(234,179,8,0.1); border-color: var(--yellow); color: var(--yellow); }
+
+.empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.job-count { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px; }
+
+@media (max-width: 640px) {
+  .profiles { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  header { flex-direction: column; gap: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>Peru Job Hunter</h1>
+      <p class="subtitle">Busqueda automatizada de trabajos en TI, Robotica y Electronica</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="toggleTheme()">Tema</button>
+    </div>
+  </header>
+
+  <div class="profiles" id="profiles"></div>
+
+  <div class="claude-banner" id="claudeBanner"></div>
+
+  <div class="status-bar" id="statusBar">
+    <span class="status-text" id="statusText">Preparando busqueda...</span>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="stats" id="stats">
+    <div class="stat-card"><div class="number" id="statTotal">0</div><div class="label">Total</div></div>
+    <div class="stat-card apply"><div class="number" id="statApply">0</div><div class="label">Postular Ya</div></div>
+    <div class="stat-card consider"><div class="number" id="statConsider">0</div><div class="label">Considerar</div></div>
+    <div class="stat-card skip"><div class="number" id="statSkip">0</div><div class="label">Omitir</div></div>
+    <div class="stat-card"><div class="number" id="statUnscored">0</div><div class="label">Sin Evaluar</div></div>
+  </div>
+
+  <div class="filters" id="filters">
+    <div class="filter-group">
+      <label>Recomendacion</label>
+      <select id="filterRec" onchange="applyFilters()">
+        <option value="all">Todas</option>
+        <option value="APPLY_NOW">Postular Ya</option>
+        <option value="CONSIDER">Considerar</option>
+        <option value="SKIP">Omitir</option>
+        <option value="UNSCORED">Sin Evaluar</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Fuente</label>
+      <select id="filterSource" onchange="applyFilters()">
+        <option value="all">Todas</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Buscar</label>
+      <input type="text" id="filterSearch" placeholder="Titulo, empresa..." oninput="applyFilters()">
+    </div>
+  </div>
+
+  <p class="job-count" id="jobCount" style="display:none"></p>
+  <div class="jobs-grid" id="jobsGrid"></div>
+</div>
+
+<script>
+const API = '';
+let allJobs = [];
+let claudeAvailable = false;
+let currentProfile = null;
+let searching = false;
+
+async function init() {
+  try {
+    const resp = await fetch(`${API}/api/profiles`);
+    const data = await resp.json();
+    claudeAvailable = data.claude_available;
+    renderProfiles(data.profiles);
+  } catch (e) {
+    document.getElementById('profiles').innerHTML = '<div class="empty"><h2>Error conectando con la API</h2><p>' + e.message + '</p></div>';
+  }
+}
+
+function renderProfiles(profiles) {
+  const container = document.getElementById('profiles');
+  container.innerHTML = '';
+
+  for (const [key, p] of Object.entries(profiles)) {
+    if (p.error) continue;
+    const sources = (p.sources || []).map(s =>
+      `<span class="source-badge ${s.enabled ? '' : 'disabled'}">${s.name}</span>`
+    ).join('');
+
+    container.innerHTML += `
+      <div class="profile-card">
+        <h2>${p.name}</h2>
+        <p>${p.description}</p>
+        <div class="sources">${sources}</div>
+        <button class="btn btn-primary" id="btn-${key}" onclick="startSearch('${key}')">
+          Buscar Trabajos
+        </button>
+      </div>`;
+  }
+}
+
+async function startSearch(profile) {
+  if (searching) return;
+  searching = true;
+  currentProfile = profile;
+  allJobs = [];
+
+  document.querySelectorAll('.btn-primary').forEach(b => b.disabled = true);
+
+  const statusBar = document.getElementById('statusBar');
+  const statusText = document.getElementById('statusText');
+  const progressFill = document.getElementById('progressFill');
+  statusBar.classList.add('visible');
+  document.getElementById('stats').classList.remove('visible');
+  document.getElementById('filters').classList.remove('visible');
+  document.getElementById('jobsGrid').innerHTML = '';
+  document.getElementById('jobCount').style.display = 'none';
+
+  const banner = document.getElementById('claudeBanner');
+  if (!claudeAvailable) {
+    banner.className = 'claude-banner visible no-key';
+    banner.textContent = 'API key de Claude no configurada. Los trabajos se mostraran sin score de relevancia.';
+  } else {
+    banner.className = 'claude-banner visible';
+    banner.textContent = 'Claude AI analizara la relevancia de cada trabajo despues de la busqueda.';
+  }
+
+  const sources = ['computrabajo', 'linkedin', 'indeed'];
+  let completed = 0;
+
+  for (const source of sources) {
+    statusText.textContent = `Buscando en ${source}...`;
+    progressFill.style.width = `${(completed / sources.length) * 100}%`;
+
+    try {
+      const resp = await fetch(`${API}/api/search/${profile}/${source}?max_pages=2`);
+      const data = await resp.json();
+
+      if (data.jobs && data.jobs.length > 0) {
+        allJobs.push(...data.jobs);
+        renderJobs();
+        statusText.textContent = `${source}: ${data.jobs.length} encontrados (total: ${allJobs.length})`;
+      } else {
+        statusText.textContent = `${source}: sin resultados`;
+      }
+    } catch (e) {
+      statusText.textContent = `${source}: error - ${e.message}`;
+    }
+
+    completed++;
+    progressFill.style.width = `${(completed / sources.length) * 100}%`;
+  }
+
+  statusText.textContent = `Busqueda completada: ${allJobs.length} trabajos encontrados`;
+  progressFill.style.width = '100%';
+
+  document.getElementById('stats').classList.add('visible');
+  document.getElementById('filters').classList.add('visible');
+  updateStats();
+  updateSourceFilter();
+
+  if (claudeAvailable && allJobs.length > 0) {
+    await analyzeWithClaude(profile);
+  }
+
+  searching = false;
+  document.querySelectorAll('.btn-primary').forEach(b => b.disabled = false);
+}
+
+async function analyzeWithClaude(profile) {
+  const statusText = document.getElementById('statusText');
+  const progressFill = document.getElementById('progressFill');
+  let analyzed = 0;
+
+  for (let i = 0; i < allJobs.length; i++) {
+    if (allJobs[i].analysis) continue;
+
+    statusText.textContent = `Analizando con Claude: ${analyzed + 1}/${allJobs.length}...`;
+    progressFill.style.width = `${(i / allJobs.length) * 100}%`;
+
+    try {
+      const resp = await fetch(`${API}/api/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile, job: allJobs[i] }),
+      });
+      const data = await resp.json();
+
+      if (data.analysis) {
+        allJobs[i].analysis = data.analysis;
+        allJobs[i].score = data.analysis.relevance_score;
+        allJobs[i].rec = data.analysis.recommendation;
+        analyzed++;
+
+        if (analyzed % 5 === 0 || i === allJobs.length - 1) {
+          allJobs.sort((a, b) => (b.score || 0) - (a.score || 0));
+          renderJobs();
+          updateStats();
+        }
+      }
+    } catch (e) {
+      console.error('Error analyzing job:', e);
+    }
+  }
+
+  allJobs.sort((a, b) => (b.score || 0) - (a.score || 0));
+  renderJobs();
+  updateStats();
+  statusText.textContent = `Completado: ${allJobs.length} trabajos, ${analyzed} analizados con Claude`;
+  progressFill.style.width = '100%';
+}
+
+function renderJobs() {
+  const grid = document.getElementById('jobsGrid');
+  const countEl = document.getElementById('jobCount');
+  countEl.style.display = 'block';
+  countEl.textContent = `Mostrando ${allJobs.length} trabajos`;
+
+  grid.innerHTML = allJobs.map(job => {
+    const analysis = job.analysis;
+    const rec = job.rec || 'UNSCORED';
+    const score = job.score || 0;
+
+    let badgeClass = 'unscored';
+    let badgeText = '--';
+    if (analysis) {
+      badgeText = `${score}/100`;
+      if (rec === 'APPLY_NOW') badgeClass = 'apply';
+      else if (rec === 'CONSIDER') badgeClass = 'consider';
+      else badgeClass = 'skip';
+    }
+
+    const location = job.location || '';
+    const dateStr = job.date_posted ? new Date(job.date_posted).toLocaleDateString('es-PE') : '';
+    const salary = job.salary || '';
+    const jobType = job.job_type !== 'unknown' ? job.job_type : '';
+    const desc = analysis?.summary || (job.description ? job.description.substring(0, 200) + (job.description.length > 200 ? '...' : '') : '');
+
+    const matchTags = (analysis?.matching_skills || []).slice(0, 5).map(s => `<span class="tag match">${s}</span>`).join('');
+    const missTags = (analysis?.missing_skills || []).slice(0, 3).map(s => `<span class="tag miss">${s}</span>`).join('');
+    const sourceTags = (job.sources_found || []).map(s => `<span class="tag source">${s}</span>`).join('');
+
+    const metaParts = [location, dateStr, salary, jobType].filter(Boolean).map(m => `<span>${m}</span>`).join('');
+
+    return `
+      <div class="job-card" data-rec="${rec}" data-source="${job.source}" data-search="${(job.title + ' ' + job.company).toLowerCase()}">
+        <div class="top-row">
+          <div>
+            <h3><a href="${job.url}" target="_blank" rel="noopener">${job.title}</a></h3>
+            <p class="company">${job.company}</p>
+          </div>
+          <span class="score-badge ${badgeClass}">${badgeText}</span>
+        </div>
+        ${metaParts ? `<div class="meta">${metaParts}</div>` : ''}
+        ${desc ? `<p class="summary">${desc}</p>` : ''}
+        <div class="tags">${matchTags}${missTags}${sourceTags}</div>
+      </div>`;
+  }).join('');
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = allJobs.length;
+  document.getElementById('statApply').textContent = allJobs.filter(j => j.rec === 'APPLY_NOW').length;
+  document.getElementById('statConsider').textContent = allJobs.filter(j => j.rec === 'CONSIDER').length;
+  document.getElementById('statSkip').textContent = allJobs.filter(j => j.rec === 'SKIP').length;
+  document.getElementById('statUnscored').textContent = allJobs.filter(j => !j.rec || j.rec === 'UNSCORED').length;
+}
+
+function updateSourceFilter() {
+  const sources = [...new Set(allJobs.map(j => j.source))].sort();
+  const select = document.getElementById('filterSource');
+  select.innerHTML = '<option value="all">Todas</option>' + sources.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+
+function applyFilters() {
+  const rec = document.getElementById('filterRec').value;
+  const source = document.getElementById('filterSource').value;
+  const search = document.getElementById('filterSearch').value.toLowerCase();
+
+  let visible = 0;
+  document.querySelectorAll('.job-card').forEach(card => {
+    let show = true;
+    if (rec !== 'all' && card.dataset.rec !== rec) show = false;
+    if (source !== 'all' && card.dataset.source !== source) show = false;
+    if (search && !card.dataset.search.includes(search)) show = false;
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  document.getElementById('jobCount').textContent = `Mostrando ${visible} de ${allJobs.length} trabajos`;
+}
+
+function toggleTheme() {
+  document.body.dataset.theme = document.body.dataset.theme === 'light' ? '' : 'light';
+}
+
+init();
+</script>
+</body>
+</html>

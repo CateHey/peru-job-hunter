@@ -1,0 +1,9 @@
+name: Schneider Electric
+careers_url: "https://www.se.com/ww/en/about-us/careers"
+search_url_pattern: "https://www.se.com/ww/en/about-us/careers/job-details.html?query={keyword}&location=Peru"
+requires_js: true
+selectors:
+  job_card: ".job-result, div[class*='job-card']"
+  title: "h3, a[class*='title']"
+  location: "span[class*='location']"
+  link: "a"

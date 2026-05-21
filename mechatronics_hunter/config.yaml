@@ -1,0 +1,104 @@
+profile:
+  name: "Practicante Ingenieria Mecatronica"
+  description: >
+    Estudiante de 9no ciclo de Ingenieria Mecatronica buscando practicas
+    pre-profesionales o posiciones entry-level en areas de Inteligencia Artificial,
+    Machine Learning, Business Intelligence, Robotica, Electronica y Automatizacion.
+  target_roles:
+    - "practicante ingenieria mecatronica"
+    - "practicante inteligencia artificial"
+    - "practicante machine learning"
+    - "practicante robotica"
+    - "practicante electronica"
+    - "practicante automatizacion"
+    - "practicante business intelligence"
+    - "intern AI"
+    - "intern robotics"
+    - "practicante data science"
+    - "practicante IoT"
+  skills:
+    - "Python"
+    - "Machine Learning"
+    - "Deep Learning"
+    - "Computer Vision"
+    - "Robotica"
+    - "PLC"
+    - "Arduino"
+    - "Raspberry Pi"
+    - "MATLAB"
+    - "Electronica"
+    - "Automatizacion Industrial"
+    - "IoT"
+    - "TensorFlow"
+    - "PyTorch"
+    - "SQL"
+    - "Power BI"
+    - "C/C++"
+    - "ROS"
+    - "SolidWorks"
+    - "AutoCAD"
+  education: "Ingenieria Mecatronica - 9no ciclo"
+  experience_level: "intern"
+  preferred_locations:
+    - "Lima"
+    - "Peru"
+    - "Remoto"
+
+search:
+  max_results_per_source: 50
+  max_age_days: 30
+  sources:
+    - name: computrabajo
+      enabled: true
+      search_terms:
+        - "practicante mecatronica"
+        - "practicante inteligencia artificial"
+        - "practicante machine learning"
+        - "practicante robotica"
+        - "practicante electronica"
+        - "practicante automatizacion"
+        - "practicante business intelligence"
+        - "practicante data science"
+        - "practicante IoT"
+    - name: linkedin
+      enabled: true
+      search_terms:
+        - "practicante mecatronica Peru"
+        - "intern AI Lima"
+        - "intern machine learning Peru"
+        - "practicante robotica Lima"
+        - "intern data science Peru"
+    - name: indeed
+      enabled: true
+      search_terms:
+        - "practicante mecatronica"
+        - "practicante inteligencia artificial"
+        - "intern robotics"
+        - "practicante machine learning"
+    - name: bumeran
+      enabled: false
+      search_terms:
+        - "practicante ingenieria"
+        - "practicante mecatronica"
+    - name: gobierno
+      enabled: true
+      search_terms:
+        - "practicante ingenieria"
+        - "practicante mecatronica"
+    - name: company_careers
+      enabled: true
+      companies:
+        - siemens
+        - abb
+        - schneider
+        - rockwell
+        - ibm
+        - microsoft
+        - jnj_peru
+      search_terms:
+        - "intern"
+        - "practicante"
+
+claude:
+  model: "claude-haiku-4-5-20251001"
+  max_tokens: 512
