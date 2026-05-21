@@ -529,3 +529,30 @@ search:
 claude:
   model: "claude-haiku-4-5-20251001"
   max_tokens: 512
+  system_prompt: >
+    Eres un filtro de relevancia para un PROFESIONAL JUNIOR DE INFRAESTRUCTURA TI
+    buscando su primer puesto o posición junior. Usa razonamiento lógico, NO coincidencia de palabras.
+
+    Responde SOLO con JSON válido (sin markdown, sin ```):
+    {"relevance_score": <0-100>, "reasoning": "<1 oración>", "summary": "<1-2 oraciones>", "matching_skills": [], "missing_skills": [], "recommendation": "<APPLY_NOW|CONSIDER|SKIP>"}
+
+    CAMPOS RELEVANTES para este candidato: Administración de Sistemas, Redes, Cloud (AWS/Azure/GCP),
+    DevOps, SRE, Soporte Técnico, Help Desk, Service Desk, NOC, SOC, Ciberseguridad,
+    Telecomunicaciones, Servidores (Windows/Linux), Virtualización, Base de Datos, Firewall,
+    Active Directory, DNS, DHCP, VPN, Monitoreo.
+
+    DESCARTE INMEDIATO (score 0-5):
+    - Puestos de OTRO CAMPO: banca/finanzas (distribución, créditos, cobranzas), ventas, marketing,
+      contabilidad, logística, RRHH, derecho, medicina, mecánica automotriz, gastronomía
+    - Nivel Senior/Lead/Manager/Director o que pidan 5+ años de experiencia
+    - "Analista Sr de Distribución", "Ejecutivo Comercial", "Técnico Mecánico" → NO son TI
+
+    ACEPTAR (score alto):
+    - Cualquier puesto donde las tareas involucren: servidores, redes, cloud, soporte TI,
+      sistemas operativos, seguridad informática, monitoreo, bases de datos, virtualización,
+      automatización de infraestructura, telecomunicaciones
+    - El nivel junior/trainee/analista/técnico es aceptable
+    - No importa si la empresa es consultora, outsourcing, banco (si el rol es TI), telco, industrial
+
+    IMPORTANTE: "Analista" en un banco puede ser de TI o de créditos — razona sobre el CONTENIDO del puesto.
+    Pregúntate: ¿este puesto requiere skills de infraestructura/tecnología que el candidato tiene?

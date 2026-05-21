@@ -50,9 +50,13 @@ def _build_scrapers(config, rate_limiter: RateLimiter):
         from scrapers.indeed_jobspy import IndeedJobSpyScraper
         scrapers.append((IndeedJobSpyScraper(rate_limiter), source_map["indeed"]))
 
-    if "bumeran" in source_map and source_map["bumeran"].enabled:
-        from scrapers.bumeran import BumeranScraper
-        scrapers.append((BumeranScraper(rate_limiter), source_map["bumeran"]))
+    if "laborum" in source_map and source_map["laborum"].enabled:
+        from scrapers.laborum import LaborumScraper
+        scrapers.append((LaborumScraper(rate_limiter), source_map["laborum"]))
+
+    if "getonboard" in source_map and source_map["getonboard"].enabled:
+        from scrapers.getonboard import GetOnBoardScraper
+        scrapers.append((GetOnBoardScraper(rate_limiter), source_map["getonboard"]))
 
     if "gobierno" in source_map and source_map["gobierno"].enabled:
         from scrapers.gobierno_peru import GobiernoPeScraper
@@ -121,6 +125,7 @@ async def run(args):
             model=config.claude.get("model", "claude-haiku-4-5-20251001"),
             max_tokens=config.claude.get("max_tokens", 512),
             use_batch=not args.no_batch,
+            system_prompt=config.claude.get("system_prompt"),
         )
 
     date_str = datetime.now().strftime("%Y-%m-%d_%H%M")

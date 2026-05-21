@@ -4,11 +4,13 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from shared.claude_analyzer import analyze_single_job, is_api_available
 from shared.config_loader import load_config
@@ -39,6 +41,10 @@ def _jobs_to_dicts(jobs: list[Job]) -> list[dict]:
     return [j.model_dump(mode="json") for j in jobs]
 
 
+def _has_server_key() -> bool:
+    return is_api_available()
+
+
 def _use_client_key(api_key: str | None):
     if api_key and api_key.startswith("sk-ant-"):
         os.environ["ANTHROPIC_API_KEY"] = api_key
@@ -63,7 +69,11 @@ async def get_profiles(request: Request):
         except Exception as e:
             profiles[name] = {"error": str(e)}
 
-    return {"profiles": profiles, "claude_available": is_api_available()}
+    return {
+        "profiles": profiles,
+        "claude_available": is_api_available(),
+        "server_has_key": _has_server_key(),
+    }
 
 
 @app.get("/api/search/{profile}/{source}")

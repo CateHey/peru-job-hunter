@@ -9,3 +9,5 @@ venv/
 mechatronics_hunter/output/
 infra_hunter/output/
 *.log
+
+.vercel

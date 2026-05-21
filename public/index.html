@@ -165,6 +165,7 @@ header .subtitle { color: var(--text-muted); font-size: 0.85rem; }
 const API = '';
 let allJobs = [];
 let claudeAvailable = false;
+let serverHasKey = false;
 let currentProfile = null;
 let searching = false;
 
@@ -173,8 +174,7 @@ function getApiKey() {
 }
 
 function hasApiKey() {
-  const key = getApiKey();
-  return key.length > 20;
+  return serverHasKey || getApiKey().length > 20;
 }
 
 function getHeaders() {
@@ -198,28 +198,27 @@ function saveKey() {
     claudeAvailable = hasApiKey();
   } else {
     localStorage.removeItem('anthropic_api_key');
-    claudeAvailable = false;
+    claudeAvailable = serverHasKey;
   }
   updateKeyStatus();
 }
 
 function updateKeyStatus() {
   const el = document.getElementById('keyStatus');
-  if (hasApiKey()) {
+  const section = document.querySelector('.api-key-section');
+
+  if (serverHasKey) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'flex';
+  if (getApiKey().length > 20) {
     el.textContent = 'Key guardada — las busquedas usaran Claude AI';
     el.style.color = 'var(--green)';
-    if (allJobs.length > 0 && !searching && allJobs.some(j => !j.analysis)) {
-      el.textContent = 'Key guardada — click "Analizar con Claude" para evaluar trabajos';
-    }
   } else {
-    const key = getApiKey();
-    if (key.length > 0 && key.length <= 20) {
-      el.textContent = 'Key muy corta — verifica que sea completa';
-      el.style.color = 'var(--yellow)';
-    } else {
-      el.textContent = 'Sin key = sin scores (opcional)';
-      el.style.color = 'var(--text-muted)';
-    }
+    el.textContent = 'Sin key = sin scores (opcional)';
+    el.style.color = 'var(--text-muted)';
   }
 }
 
@@ -231,14 +230,15 @@ async function init() {
   keyInput.addEventListener('input', saveKey);
   keyInput.addEventListener('change', saveKey);
 
-  updateKeyStatus();
-
   try {
     const resp = await fetch(`${API}/api/profiles`, { headers: getHeaders() });
     const data = await resp.json();
+    serverHasKey = data.server_has_key || false;
     claudeAvailable = data.claude_available || hasApiKey();
+    updateKeyStatus();
     renderProfiles(data.profiles);
   } catch (e) {
+    updateKeyStatus();
     document.getElementById('profiles').innerHTML = '<div class="empty"><h2>Error conectando con la API</h2><p>' + e.message + '</p></div>';
   }
 }
@@ -286,7 +286,7 @@ async function startSearch(profile) {
   const banner = document.getElementById('claudeBanner');
   if (!claudeAvailable) {
     banner.className = 'claude-banner visible no-key';
-    banner.textContent = 'Sin API key de Claude. Ingresa tu key arriba para activar el analisis de relevancia, o busca sin scores.';
+    banner.textContent = 'Sin API key de Claude. Los trabajos se mostraran sin scores de relevancia.';
   } else {
     banner.className = 'claude-banner visible';
     banner.textContent = 'Claude AI analizara la relevancia de cada trabajo despues de la busqueda.';
@@ -329,8 +329,8 @@ async function startSearch(profile) {
     statusText.textContent = `${allJobs.length} trabajos encontrados. Analizando con Claude...`;
     await analyzeWithClaude(profile);
   } else if (allJobs.length > 0) {
-    statusText.textContent = `${allJobs.length} trabajos encontrados. Ingresa tu API key arriba y presiona "Analizar con Claude" para ver scores.`;
-    showAnalyzeButton(profile);
+    statusText.textContent = `${allJobs.length} trabajos encontrados sin analisis de relevancia.`;
+    if (!serverHasKey) showAnalyzeButton(profile);
   } else {
     statusText.textContent = 'No se encontraron trabajos. Intenta de nuevo mas tarde.';
   }

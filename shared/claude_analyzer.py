@@ -10,17 +10,25 @@ from shared.utils import setup_logging
 
 logger = setup_logging("claude_analyzer")
 
-SYSTEM_PROMPT = """Eres un analista de relevancia laboral para el mercado peruano. Recibirás un perfil de candidato y una oferta de trabajo. Analiza la compatibilidad y responde SOLO con un objeto JSON válido (sin markdown, sin ```):
+DEFAULT_SYSTEM_PROMPT = """Eres un filtro inteligente de relevancia laboral. Tu trabajo es RAZONAR sobre si un puesto es realmente adecuado para el candidato. NO te bases en coincidencia de palabras clave — usa lógica y sentido común.
+
+Responde SOLO con un objeto JSON válido (sin markdown, sin ```):
 
 {
   "relevance_score": <int 0-100>,
-  "summary": "<resumen de 2-3 oraciones en español del puesto>",
+  "reasoning": "<1 oración: POR QUÉ es o no es relevante>",
+  "summary": "<resumen de 1-2 oraciones del puesto>",
   "matching_skills": ["skill1", "skill2"],
   "missing_skills": ["skill1", "skill2"],
   "recommendation": "<APPLY_NOW si score >= 70 | CONSIDER si 40-69 | SKIP si < 40>"
 }
 
-Evalúa basándote en: alineación del rol, skills requeridos vs skills del candidato, requisitos de educación, nivel de experiencia, compatibilidad de ubicación. Considera que "practicante" y "intern" son equivalentes."""
+PROCESO DE RAZONAMIENTO:
+1. ¿El CAMPO del puesto coincide con el del candidato? (ej: "Distribución bancaria" NO es mecatrónica aunque diga "Analista")
+2. ¿El NIVEL es accesible? (Si dice "Sr", "Senior", "Lead", "5+ años" y el candidato es practicante/junior → SKIP)
+3. ¿El candidato podría REALMENTE hacer este trabajo con sus skills y formación?
+
+IMPORTANTE: Una palabra genérica compartida ("analista", "técnico", "ingeniero", "junior") NO hace relevante un puesto. Lo que importa es: ¿este trabajo pertenece al MISMO MUNDO PROFESIONAL que el candidato?"""
 
 
 def is_api_available() -> bool:
@@ -28,11 +36,15 @@ def is_api_available() -> bool:
     return bool(key and key != "sk-ant-your-key-here")
 
 
+def _get_prompt(custom_prompt: str | None) -> str:
+    return custom_prompt if custom_prompt else DEFAULT_SYSTEM_PROMPT
+
+
 def _build_user_message(profile: ClientProfile, job: Job) -> str:
     profile_text = f"""PERFIL DEL CANDIDATO:
 Nombre: {profile.name}
 Descripcion: {profile.description}
-Roles objetivo: {', '.join(profile.target_roles[:5])}
+Roles objetivo (ejemplos): {', '.join(profile.target_roles[:20])}
 Skills: {', '.join(profile.skills)}
 Educacion: {profile.education}
 Nivel: {profile.experience_level}
@@ -84,9 +96,12 @@ def analyze_single_job(
     profile: ClientProfile,
     model: str = "claude-haiku-4-5-20251001",
     max_tokens: int = 512,
+    system_prompt: str | None = None,
 ) -> EnrichedJob:
     if not is_api_available():
         return EnrichedJob(job=job, analysis=None)
+
+    prompt = _get_prompt(system_prompt)
 
     try:
         import anthropic
@@ -97,7 +112,7 @@ def analyze_single_job(
             max_tokens=max_tokens,
             system=[{
                 "type": "text",
-                "text": SYSTEM_PROMPT,
+                "text": prompt,
                 "cache_control": {"type": "ephemeral"},
             }],
             messages=[{
@@ -120,6 +135,7 @@ def analyze_jobs_sequential(
     profile: ClientProfile,
     model: str = "claude-haiku-4-5-20251001",
     max_tokens: int = 512,
+    system_prompt: str | None = None,
 ) -> list[EnrichedJob]:
     if not is_api_available():
         logger.warning("API key no configurada. Retornando trabajos sin analisis.")
@@ -132,6 +148,7 @@ def analyze_jobs_sequential(
         logger.error("anthropic o tqdm no instalados")
         return [EnrichedJob(job=job, analysis=None) for job in jobs]
 
+    prompt = _get_prompt(system_prompt)
     client = anthropic.Anthropic()
     enriched: list[EnrichedJob] = []
 
@@ -142,7 +159,7 @@ def analyze_jobs_sequential(
                 max_tokens=max_tokens,
                 system=[{
                     "type": "text",
-                    "text": SYSTEM_PROMPT,
+                    "text": prompt,
                     "cache_control": {"type": "ephemeral"},
                 }],
                 messages=[{
@@ -173,6 +190,7 @@ def analyze_jobs_batch(
     max_tokens: int = 512,
     poll_interval: int = 30,
     max_wait: int = 3600,
+    system_prompt: str | None = None,
 ) -> list[EnrichedJob]:
     if not jobs:
         return []
@@ -187,6 +205,7 @@ def analyze_jobs_batch(
         logger.error("anthropic no instalado")
         return [EnrichedJob(job=job, analysis=None) for job in jobs]
 
+    prompt = _get_prompt(system_prompt)
     client = anthropic.Anthropic()
 
     requests = []
@@ -196,7 +215,7 @@ def analyze_jobs_batch(
             "params": {
                 "model": model,
                 "max_tokens": max_tokens,
-                "system": [{"type": "text", "text": SYSTEM_PROMPT}],
+                "system": [{"type": "text", "text": prompt}],
                 "messages": [{
                     "role": "user",
                     "content": _build_user_message(profile, job),
@@ -212,7 +231,7 @@ def analyze_jobs_batch(
         logger.info("Batch creado: %s", batch_id)
     except Exception as e:
         logger.error("Error creando batch: %s. Usando modo secuencial.", e)
-        return analyze_jobs_sequential(jobs, profile, model, max_tokens)
+        return analyze_jobs_sequential(jobs, profile, model, max_tokens, system_prompt)
 
     elapsed = 0
     while elapsed < max_wait:
@@ -264,6 +283,7 @@ def analyze_jobs(
     model: str = "claude-haiku-4-5-20251001",
     max_tokens: int = 512,
     use_batch: bool = True,
+    system_prompt: str | None = None,
 ) -> list[EnrichedJob]:
     if not jobs:
         return []
@@ -275,6 +295,6 @@ def analyze_jobs(
     logger.info("Analizando %d trabajos con Claude (%s)...", len(jobs), model)
 
     if use_batch and len(jobs) >= 5:
-        return analyze_jobs_batch(jobs, profile, model, max_tokens)
+        return analyze_jobs_batch(jobs, profile, model, max_tokens, system_prompt=system_prompt)
     else:
-        return analyze_jobs_sequential(jobs, profile, model, max_tokens)
+        return analyze_jobs_sequential(jobs, profile, model, max_tokens, system_prompt=system_prompt)

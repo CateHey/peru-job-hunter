@@ -12,9 +12,10 @@ class JobSource(str, Enum):
     COMPUTRABAJO = "computrabajo"
     LINKEDIN = "linkedin"
     INDEED = "indeed"
-    BUMERAN = "bumeran"
+    LABORUM = "laborum"
     GOBIERNO = "gobierno"
     COMPANY_CAREER = "company_career"
+    GETONBOARD = "getonboard"
 
 
 class JobType(str, Enum):
@@ -82,6 +83,7 @@ class SourceConfig(BaseModel):
     enabled: bool = True
     search_terms: list[str] = Field(default_factory=list)
     companies: list[str] = Field(default_factory=list)
+    experience_levels: list[str] = Field(default_factory=list)
 
 
 class SearchConfig(BaseModel):
