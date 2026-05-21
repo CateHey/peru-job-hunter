@@ -282,15 +282,9 @@ async function startSearch(profile) {
   document.getElementById('jobsGrid').innerHTML = '';
   document.getElementById('jobCount').style.display = 'none';
 
-  claudeAvailable = hasApiKey();
   const banner = document.getElementById('claudeBanner');
-  if (!claudeAvailable) {
-    banner.className = 'claude-banner visible no-key';
-    banner.textContent = 'Sin API key de Claude. Los trabajos se mostraran sin scores de relevancia.';
-  } else {
-    banner.className = 'claude-banner visible';
-    banner.textContent = 'Claude AI analizara la relevancia de cada trabajo despues de la busqueda.';
-  }
+  banner.className = 'claude-banner visible';
+  banner.textContent = 'Buscando trabajos...';
 
   const sources = ['computrabajo', 'linkedin', 'indeed'];
   let completed = 0;
@@ -320,17 +314,21 @@ async function startSearch(profile) {
 
   progressFill.style.width = '100%';
 
+  preFilterSeniorTitles();
+  renderJobs();
+
   document.getElementById('stats').classList.add('visible');
   document.getElementById('filters').classList.add('visible');
   updateStats();
   updateSourceFilter();
 
-  if (hasApiKey() && allJobs.length > 0) {
-    statusText.textContent = `${allJobs.length} trabajos encontrados. Analizando con Claude...`;
-    await analyzeWithClaude(profile);
-  } else if (allJobs.length > 0) {
-    statusText.textContent = `${allJobs.length} trabajos encontrados sin analisis de relevancia.`;
-    if (!serverHasKey) showAnalyzeButton(profile);
+  if (allJobs.length > 0) {
+    const skipped = allJobs.filter(j => j.rec === 'SKIP').length;
+    const pending = allJobs.length - skipped;
+    statusText.textContent = `${allJobs.length} trabajos encontrados. ${skipped} descartados por titulo senior. Presiona "Analizar con Claude" para evaluar los ${pending} restantes.`;
+    banner.className = 'claude-banner visible';
+    banner.textContent = 'Trabajos listos. Usa el boton para que Claude analice la relevancia de cada uno.';
+    showAnalyzeButton(profile);
   } else {
     statusText.textContent = 'No se encontraron trabajos. Intenta de nuevo mas tarde.';
   }
@@ -338,6 +336,34 @@ async function startSearch(profile) {
   searching = false;
   document.querySelectorAll('.btn-primary').forEach(b => b.disabled = false);
   updateKeyStatus();
+}
+
+const SENIOR_BLOCKLIST = [
+  'jefe', 'gerente', 'director', 'coordinador', 'supervisor',
+  'superintendente', 'líder', 'lider', 'lead', 'head', 'manager',
+  'senior', 'sr.', 'semi-senior', 'semi senior', 'principal',
+  'arquitecto', 'profesor', 'docente', 'catedrático', 'catedratico',
+  'maestro de', 'decano', 'rector',
+];
+
+function preFilterSeniorTitles() {
+  for (const job of allJobs) {
+    if (job.analysis) continue;
+    const t = job.title.toLowerCase();
+    const blocked = SENIOR_BLOCKLIST.find(term => t.includes(term));
+    if (blocked) {
+      job.analysis = {
+        relevance_score: 0,
+        reasoning: `Descartado: titulo "${job.title}" contiene "${blocked}" — puesto senior, no apto para entry-level`,
+        summary: `${job.title} en ${job.company}`,
+        matching_skills: [],
+        missing_skills: [],
+        recommendation: 'SKIP',
+      };
+      job.score = 0;
+      job.rec = 'SKIP';
+    }
+  }
 }
 
 function showAnalyzeButton(profile) {
@@ -352,13 +378,13 @@ function showAnalyzeButton(profile) {
   btn.textContent = 'Analizar con Claude';
   btn.onclick = async () => {
     if (!hasApiKey()) {
-      alert('Ingresa tu API key de Anthropic y presiona "Guardar Key"');
+      alert('Configura ANTHROPIC_API_KEY en Vercel o ingresa tu key arriba');
       return;
     }
     btn.disabled = true;
     btn.textContent = 'Analizando...';
     await analyzeWithClaude(profile);
-    btn.remove();
+    btn.textContent = 'Analisis completado';
   };
   banner.appendChild(btn);
 }
@@ -366,13 +392,16 @@ function showAnalyzeButton(profile) {
 async function analyzeWithClaude(profile) {
   const statusText = document.getElementById('statusText');
   const progressFill = document.getElementById('progressFill');
+  const pending = allJobs.filter(j => !j.analysis);
   let analyzed = 0;
+  let errors = 0;
 
   for (let i = 0; i < allJobs.length; i++) {
     if (allJobs[i].analysis) continue;
 
-    statusText.textContent = `Analizando con Claude: ${analyzed + 1}/${allJobs.length}...`;
-    progressFill.style.width = `${(i / allJobs.length) * 100}%`;
+    analyzed++;
+    statusText.textContent = `Analizando con Claude: ${analyzed}/${pending.length}...`;
+    progressFill.style.width = `${(analyzed / pending.length) * 100}%`;
 
     try {
       const resp = await fetch(`${API}/api/analyze`, {
@@ -386,15 +415,18 @@ async function analyzeWithClaude(profile) {
         allJobs[i].analysis = data.analysis;
         allJobs[i].score = data.analysis.relevance_score;
         allJobs[i].rec = data.analysis.recommendation;
-        analyzed++;
+      } else if (data.error) {
+        errors++;
+        console.error('Analyze error:', data.error);
+      }
 
-        if (analyzed % 5 === 0 || i === allJobs.length - 1) {
-          allJobs.sort((a, b) => (b.score || 0) - (a.score || 0));
-          renderJobs();
-          updateStats();
-        }
+      if (analyzed % 3 === 0 || analyzed === pending.length) {
+        allJobs.sort((a, b) => (b.score || 0) - (a.score || 0));
+        renderJobs();
+        updateStats();
       }
     } catch (e) {
+      errors++;
       console.error('Error analyzing job:', e);
     }
   }
@@ -402,7 +434,8 @@ async function analyzeWithClaude(profile) {
   allJobs.sort((a, b) => (b.score || 0) - (a.score || 0));
   renderJobs();
   updateStats();
-  statusText.textContent = `Completado: ${allJobs.length} trabajos, ${analyzed} analizados con Claude`;
+  const preFiltered = allJobs.filter(j => j.analysis?.reasoning?.startsWith('Descartado')).length;
+  statusText.textContent = `Completado: ${pending.length} analizados con Claude, ${preFiltered} descartados por titulo${errors ? `, ${errors} errores` : ''}`;
   progressFill.style.width = '100%';
 }
 

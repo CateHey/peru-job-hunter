@@ -25,12 +25,41 @@ Responde SOLO con un objeto JSON válido (sin markdown, sin ```):
 
 PROCESO DE RAZONAMIENTO:
 1. ¿El CAMPO del puesto coincide con el del candidato? (ej: "Distribución bancaria" NO es mecatrónica aunque diga "Analista")
-2. ¿El NIVEL es accesible para el candidato? REGLA ESTRICTA: si el título o descripción contiene "Jefe", "Gerente", "Director", "Coordinador", "Supervisor", "Líder", "Lead", "Head", "Manager", "Senior", "Sr.", "Semi-Senior", "Principal", "Arquitecto", "5+ años", "3+ años de experiencia" y el candidato es practicante/junior/trainee/intern → score <= 10, SKIP. Estos puestos NUNCA son para entry-level.
+2. ¿El NIVEL es accesible para el candidato? REGLA ESTRICTA: si el título o descripción contiene "Jefe", "Gerente", "Director", "Coordinador", "Supervisor", "Superintendente", "Líder", "Lead", "Head", "Manager", "Senior", "Sr.", "Semi-Senior", "Principal", "Arquitecto", "Profesor", "Docente", "Catedrático", "Maestro", "5+ años", "3+ años de experiencia" y el candidato es practicante/junior/trainee/intern → score <= 10, SKIP. Estos puestos NUNCA son para entry-level.
 3. ¿El candidato podría REALMENTE hacer este trabajo con sus skills y formación?
 
 IMPORTANTE:
-- Una palabra genérica compartida ("analista", "técnico", "ingeniero", "junior") NO hace relevante un puesto. Lo que importa es: ¿este trabajo pertenece al MISMO MUNDO PROFESIONAL que el candidato?
-- El campo "reasoning" es OBLIGATORIO y debe explicar claramente por qué se dio esa puntuación. Si es SKIP, explica qué lo descalifica."""
+- Una palabra genérica compartida ("analista", "técnico", "ingeniero", "junior", "practicante") NO hace relevante un puesto. "Practicante de Proyectos Hospitalarios" NO es relevante para un estudiante de mecatrónica. "Practicante Administrativo" NO es relevante para un perfil de TI. Lo que importa es: ¿este trabajo pertenece al MISMO MUNDO PROFESIONAL que el candidato?
+- El campo "reasoning" es OBLIGATORIO y debe explicar claramente por qué se dio esa puntuación. Si es SKIP, explica qué lo descalifica.
+- Sé ESTRICTO: en caso de duda, prefiere SKIP. Es mejor perder un puesto marginal que recomendar uno irrelevante."""
+
+
+SENIOR_TITLE_BLOCKLIST = [
+    "jefe", "gerente", "director", "coordinador", "supervisor",
+    "superintendente", "líder", "lider", "lead", "head", "manager",
+    "senior", "sr.", "semi-senior", "semi senior", "principal",
+    "arquitecto", "profesor", "docente", "catedrático", "catedratico",
+    "maestro de", "decano", "rector",
+]
+
+
+def _is_senior_title(title: str, experience_level: str) -> bool:
+    if experience_level not in ("intern", "junior", "trainee", "entry"):
+        return False
+    title_lower = title.lower()
+    return any(term in title_lower for term in SENIOR_TITLE_BLOCKLIST)
+
+
+def _auto_skip_analysis(job: Job, reason: str) -> AnalysisResult:
+    return AnalysisResult(
+        job_id=job.id,
+        relevance_score=0,
+        reasoning=f"Descartado automaticamente: {reason}",
+        summary=f"{job.title} en {job.company}",
+        matching_skills=[],
+        missing_skills=[],
+        recommendation=Recommendation.SKIP,
+    )
 
 
 def is_api_available() -> bool:
@@ -101,6 +130,10 @@ def analyze_single_job(
     max_tokens: int = 512,
     system_prompt: str | None = None,
 ) -> EnrichedJob:
+    if _is_senior_title(job.title, profile.experience_level):
+        logger.info("Pre-filtro: SKIP '%s' (titulo senior para candidato %s)", job.title, profile.experience_level)
+        return EnrichedJob(job=job, analysis=_auto_skip_analysis(job, f"Titulo '{job.title}' es de nivel senior, no apto para {profile.experience_level}"))
+
     if not is_api_available():
         return EnrichedJob(job=job, analysis=None)
 
@@ -291,13 +324,30 @@ def analyze_jobs(
     if not jobs:
         return []
 
+    pre_filtered: list[EnrichedJob] = []
+    remaining: list[Job] = []
+    for job in jobs:
+        if _is_senior_title(job.title, profile.experience_level):
+            logger.info("Pre-filtro: SKIP '%s' (titulo senior)", job.title)
+            pre_filtered.append(EnrichedJob(
+                job=job,
+                analysis=_auto_skip_analysis(job, f"Titulo '{job.title}' es de nivel senior, no apto para {profile.experience_level}"),
+            ))
+        else:
+            remaining.append(job)
+
+    if pre_filtered:
+        logger.info("Pre-filtro descarto %d puestos senior. %d restantes para Claude.", len(pre_filtered), len(remaining))
+
     if not is_api_available():
         logger.warning("ANTHROPIC_API_KEY no encontrada o invalida. Los trabajos se mostraran sin score de relevancia.")
-        return [EnrichedJob(job=job, analysis=None) for job in jobs]
+        return pre_filtered + [EnrichedJob(job=job, analysis=None) for job in remaining]
 
-    logger.info("Analizando %d trabajos con Claude (%s)...", len(jobs), model)
+    logger.info("Analizando %d trabajos con Claude (%s)...", len(remaining), model)
 
-    if use_batch and len(jobs) >= 5:
-        return analyze_jobs_batch(jobs, profile, model, max_tokens, system_prompt=system_prompt)
+    if use_batch and len(remaining) >= 5:
+        analyzed = analyze_jobs_batch(remaining, profile, model, max_tokens, system_prompt=system_prompt)
     else:
-        return analyze_jobs_sequential(jobs, profile, model, max_tokens, system_prompt=system_prompt)
+        analyzed = analyze_jobs_sequential(remaining, profile, model, max_tokens, system_prompt=system_prompt)
+
+    return pre_filtered + analyzed
