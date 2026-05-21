@@ -315,6 +315,7 @@ async function startSearch(profile) {
   progressFill.style.width = '100%';
 
   preFilterSeniorTitles();
+  sortJobs();
   renderJobs();
 
   document.getElementById('stats').classList.add('visible');
@@ -325,10 +326,10 @@ async function startSearch(profile) {
   if (allJobs.length > 0) {
     const skipped = allJobs.filter(j => j.rec === 'SKIP').length;
     const pending = allJobs.length - skipped;
-    statusText.textContent = `${allJobs.length} trabajos encontrados. ${skipped} descartados por titulo senior. Presiona "Analizar con Claude" para evaluar los ${pending} restantes.`;
+    statusText.textContent = `${allJobs.length} trabajos encontrados. ${skipped} descartados por titulo. Analizando ${pending} con Claude...`;
     banner.className = 'claude-banner visible';
-    banner.textContent = 'Trabajos listos. Usa el boton para que Claude analice la relevancia de cada uno.';
-    showAnalyzeButton(profile);
+    banner.textContent = 'Claude AI esta analizando la relevancia de cada trabajo...';
+    await analyzeWithClaude(profile);
   } else {
     statusText.textContent = 'No se encontraron trabajos. Intenta de nuevo mas tarde.';
   }
@@ -389,6 +390,17 @@ function showAnalyzeButton(profile) {
   banner.appendChild(btn);
 }
 
+const REC_ORDER = { 'APPLY_NOW': 0, 'CONSIDER': 1, 'SKIP': 2, 'UNSCORED': 3 };
+
+function sortJobs() {
+  allJobs.sort((a, b) => {
+    const recA = REC_ORDER[a.rec || 'UNSCORED'] ?? 3;
+    const recB = REC_ORDER[b.rec || 'UNSCORED'] ?? 3;
+    if (recA !== recB) return recA - recB;
+    return (b.score || 0) - (a.score || 0);
+  });
+}
+
 async function analyzeWithClaude(profile) {
   const statusText = document.getElementById('statusText');
   const progressFill = document.getElementById('progressFill');
@@ -421,7 +433,7 @@ async function analyzeWithClaude(profile) {
       }
 
       if (analyzed % 3 === 0 || analyzed === pending.length) {
-        allJobs.sort((a, b) => (b.score || 0) - (a.score || 0));
+        sortJobs();
         renderJobs();
         updateStats();
       }
@@ -431,12 +443,18 @@ async function analyzeWithClaude(profile) {
     }
   }
 
-  allJobs.sort((a, b) => (b.score || 0) - (a.score || 0));
+  sortJobs();
   renderJobs();
   updateStats();
-  const preFiltered = allJobs.filter(j => j.analysis?.reasoning?.startsWith('Descartado')).length;
-  statusText.textContent = `Completado: ${pending.length} analizados con Claude, ${preFiltered} descartados por titulo${errors ? `, ${errors} errores` : ''}`;
+  const applied = allJobs.filter(j => j.rec === 'APPLY_NOW').length;
+  const considered = allJobs.filter(j => j.rec === 'CONSIDER').length;
+  const skipped = allJobs.filter(j => j.rec === 'SKIP').length;
+  statusText.textContent = `Completado: ${applied} Postular Ya, ${considered} Considerar, ${skipped} Omitir${errors ? ` (${errors} errores)` : ''}`;
   progressFill.style.width = '100%';
+
+  const banner = document.getElementById('claudeBanner');
+  banner.className = 'claude-banner visible';
+  banner.textContent = 'Analisis completado. Los trabajos estan ordenados por relevancia.';
 }
 
 function renderJobs() {
