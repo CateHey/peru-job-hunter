@@ -1,22 +1,41 @@
 profile:
-  name: "Junior Infraestructura TI"
+  name: "Infraestructura TI"
   description: >
-    Profesional buscando su primer puesto junior en Infraestructura de TI.
-    Areas de interes: Administracion de Sistemas, Redes, Cloud Computing,
-    DevOps, Soporte Tecnico, Help Desk avanzado.
+    Profesional buscando puesto en Infraestructura de TI, Administracion de
+    Sistemas, Redes, Cloud Computing, DevOps, Soporte Tecnico, Ciberseguridad,
+    NOC, SOC, Telecomunicaciones. Abierto a junior, trainee, analista, tecnico,
+    consultoria, outsourcing. Español e Ingles.
   target_roles:
-    - "junior sysadmin"
-    - "administrador sistemas junior"
-    - "junior cloud"
-    - "junior DevOps"
-    - "ingeniero redes junior"
+    - "administrador sistemas"
+    - "sysadmin"
+    - "system administrator"
+    - "ingeniero infraestructura"
+    - "infrastructure engineer"
+    - "ingeniero redes"
+    - "network engineer"
+    - "cloud engineer"
+    - "DevOps engineer"
+    - "SRE"
+    - "site reliability engineer"
+    - "soporte tecnico"
+    - "technical support"
     - "help desk"
-    - "soporte tecnico nivel 2"
-    - "infraestructura TI"
-    - "junior AWS"
-    - "junior Azure"
+    - "service desk"
     - "analista infraestructura"
+    - "analista TI"
+    - "IT analyst"
     - "tecnico redes"
+    - "tecnico sistemas"
+    - "operador NOC"
+    - "analista SOC"
+    - "analista seguridad informatica"
+    - "cybersecurity analyst"
+    - "ingeniero telecomunicaciones"
+    - "DBA"
+    - "database administrator"
+    - "IT support"
+    - "trainee TI"
+    - "consultor TI"
   skills:
     - "Windows Server"
     - "Linux"
@@ -28,19 +47,30 @@ profile:
     - "Firewall"
     - "AWS"
     - "Azure"
+    - "GCP"
     - "Docker"
+    - "Kubernetes"
     - "VMware"
     - "Hyper-V"
     - "Cisco"
     - "Mikrotik"
+    - "Fortinet"
     - "PowerShell"
     - "Bash"
     - "Python"
     - "Git"
     - "Terraform"
     - "Ansible"
+    - "Jenkins"
     - "ITIL"
-    - "Monitoreo (Zabbix/Nagios)"
+    - "Zabbix"
+    - "Nagios"
+    - "Grafana"
+    - "Office 365"
+    - "Google Workspace"
+    - "SQL Server"
+    - "MySQL"
+    - "PostgreSQL"
   education: "Ingenieria de Sistemas / Informatica o afines"
   experience_level: "junior"
   preferred_locations:
@@ -49,47 +79,133 @@ profile:
     - "Remoto"
 
 search:
-  max_results_per_source: 50
+  max_results_per_source: 80
   max_age_days: 30
   sources:
     - name: computrabajo
       enabled: true
       search_terms:
-        - "junior sysadmin"
-        - "administrador sistemas junior"
-        - "soporte tecnico"
-        - "help desk"
+        # Infraestructura y sistemas
         - "infraestructura TI"
-        - "ingeniero redes junior"
-        - "junior cloud"
-        - "junior DevOps"
-        - "analista infraestructura"
+        - "administrador sistemas"
+        - "administrador de servidores"
+        - "sysadmin"
+        - "ingeniero infraestructura"
+        # Redes y telecomunicaciones
+        - "ingeniero redes"
         - "tecnico redes"
+        - "telecomunicaciones"
+        - "network engineer"
+        # Cloud y DevOps
+        - "cloud"
+        - "DevOps"
+        - "AWS"
+        - "Azure"
+        # Soporte y help desk
+        - "soporte tecnico"
+        - "soporte TI"
+        - "help desk"
+        - "service desk"
+        - "mesa de ayuda"
+        - "soporte nivel 2"
+        - "IT support"
+        # Seguridad
+        - "seguridad informatica"
+        - "ciberseguridad"
+        - "analista SOC"
+        - "NOC"
+        # Analista / Tecnico generico
+        - "analista TI"
+        - "analista infraestructura"
+        - "tecnico sistemas"
+        - "tecnico informatica"
+        - "operador datacenter"
+        # Consultoria y outsourcing
+        - "consultor TI"
+        - "outsourcing TI"
+        # Base de datos
+        - "DBA"
+        - "administrador base datos"
+        # Trainee
+        - "trainee sistemas"
+        - "trainee TI"
     - name: linkedin
       enabled: true
+      experience_levels: ["2", "3"]
       search_terms:
-        - "junior IT infrastructure Peru"
-        - "sysadmin junior Lima"
-        - "junior DevOps Peru"
-        - "junior cloud engineer Peru"
-        - "help desk Lima"
+        # Español - amplio
+        - "infraestructura TI"
+        - "administrador sistemas"
+        - "soporte tecnico"
+        - "help desk"
+        - "ingeniero redes"
+        - "tecnico redes"
+        - "DevOps"
+        - "cloud"
+        - "seguridad informatica"
+        - "ciberseguridad"
+        - "analista TI"
+        - "telecomunicaciones"
+        - "NOC"
+        - "SOC"
+        - "service desk"
+        - "mesa ayuda"
+        - "soporte TI"
+        - "tecnico sistemas"
+        # Ingles
+        - "IT infrastructure"
+        - "system administrator"
+        - "network engineer"
+        - "cloud engineer"
+        - "DevOps engineer"
+        - "SRE"
+        - "IT support"
+        - "IT analyst"
+        - "cybersecurity"
+        - "technical support"
+        - "infrastructure engineer"
+        - "database administrator"
+        # Con ubicacion
+        - "sysadmin Peru"
+        - "AWS Peru"
+        - "Azure Peru"
+        - "Linux Peru"
+        - "Windows Server Peru"
     - name: indeed
       enabled: true
       search_terms:
-        - "sysadmin junior"
-        - "soporte tecnico"
         - "infraestructura TI"
-        - "junior DevOps"
+        - "soporte tecnico"
+        - "administrador sistemas"
+        - "help desk"
+        - "DevOps"
+        - "cloud"
+        - "ingeniero redes"
+        - "sysadmin"
+        - "IT support"
+        - "network engineer"
+        - "seguridad informatica"
+        - "NOC"
+        - "tecnico sistemas"
+        - "service desk"
     - name: bumeran
       enabled: false
       search_terms:
         - "soporte tecnico"
         - "administrador sistemas"
+        - "infraestructura"
+        - "help desk"
+        - "redes"
     - name: gobierno
       enabled: true
       search_terms:
         - "soporte tecnico"
         - "infraestructura"
+        - "sistemas"
+        - "redes"
+        - "informatica"
+        - "telecomunicaciones"
+        - "seguridad informatica"
     - name: company_careers
       enabled: true
       companies:
@@ -103,9 +219,15 @@ search:
         - bbva
         - bcp
       search_terms:
-        - "junior"
         - "infrastructure"
         - "sysadmin"
+        - "support"
+        - "network"
+        - "cloud"
+        - "DevOps"
+        - "IT"
+        - "systems"
+        - "security"
 
 claude:
   model: "claude-haiku-4-5-20251001"

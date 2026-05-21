@@ -1,42 +1,79 @@
 profile:
-  name: "Practicante Ingenieria Mecatronica"
+  name: "Ingenieria Mecatronica - Practicas y Entry Level"
   description: >
     Estudiante de 9no ciclo de Ingenieria Mecatronica buscando practicas
-    pre-profesionales o posiciones entry-level en areas de Inteligencia Artificial,
-    Machine Learning, Business Intelligence, Robotica, Electronica y Automatizacion.
+    pre-profesionales, trainee o posiciones entry-level en: Inteligencia Artificial,
+    Machine Learning, Data Science, Business Intelligence, Robotica, Electronica,
+    Automatizacion Industrial, IoT, Control, Instrumentacion, Mantenimiento,
+    Programacion. Abierto a consultoras, outsourcing, industria, mineria, manufactura.
   target_roles:
-    - "practicante ingenieria mecatronica"
-    - "practicante inteligencia artificial"
-    - "practicante machine learning"
-    - "practicante robotica"
+    - "practicante mecatronica"
+    - "practicante ingenieria"
     - "practicante electronica"
     - "practicante automatizacion"
+    - "practicante robotica"
+    - "practicante inteligencia artificial"
+    - "practicante machine learning"
+    - "practicante data science"
     - "practicante business intelligence"
+    - "practicante IoT"
+    - "practicante programacion"
+    - "practicante python"
+    - "trainee ingenieria"
+    - "trainee electronica"
+    - "trainee automatizacion"
+    - "intern engineering"
     - "intern AI"
     - "intern robotics"
-    - "practicante data science"
-    - "practicante IoT"
+    - "intern data science"
+    - "intern machine learning"
+    - "junior mecatronica"
+    - "junior electronica"
+    - "junior automatizacion"
+    - "junior data analyst"
+    - "junior data scientist"
+    - "junior machine learning"
+    - "junior BI"
+    - "junior Python"
+    - "tecnico electronica"
+    - "tecnico instrumentacion"
+    - "tecnico automatizacion"
+    - "tecnico mantenimiento"
+    - "analista datos"
+    - "analista BI"
+    - "ingeniero control"
+    - "ingeniero instrumentacion"
   skills:
     - "Python"
     - "Machine Learning"
     - "Deep Learning"
     - "Computer Vision"
+    - "NLP"
     - "Robotica"
     - "PLC"
+    - "SCADA"
     - "Arduino"
     - "Raspberry Pi"
     - "MATLAB"
+    - "Simulink"
     - "Electronica"
     - "Automatizacion Industrial"
     - "IoT"
     - "TensorFlow"
     - "PyTorch"
+    - "scikit-learn"
     - "SQL"
     - "Power BI"
+    - "Tableau"
+    - "Excel avanzado"
     - "C/C++"
     - "ROS"
     - "SolidWorks"
     - "AutoCAD"
+    - "LabVIEW"
+    - "Instrumentacion"
+    - "Control"
+    - "Sensores"
   education: "Ingenieria Mecatronica - 9no ciclo"
   experience_level: "intern"
   preferred_locations:
@@ -45,46 +82,135 @@ profile:
     - "Remoto"
 
 search:
-  max_results_per_source: 50
+  max_results_per_source: 80
   max_age_days: 30
   sources:
     - name: computrabajo
       enabled: true
       search_terms:
+        # Practicas directas
         - "practicante mecatronica"
-        - "practicante inteligencia artificial"
-        - "practicante machine learning"
-        - "practicante robotica"
+        - "practicante ingenieria"
         - "practicante electronica"
         - "practicante automatizacion"
-        - "practicante business intelligence"
+        - "practicante robotica"
+        - "practicante programacion"
+        - "practicante python"
+        # AI / ML / Data
+        - "practicante inteligencia artificial"
+        - "practicante machine learning"
         - "practicante data science"
+        - "practicante data analyst"
+        - "practicante business intelligence"
+        - "practicante BI"
+        - "practicante analista datos"
+        # Industria y manufactura
+        - "practicante mantenimiento"
+        - "practicante instrumentacion"
+        - "practicante control"
         - "practicante IoT"
+        - "practicante PLC"
+        # Sin prefijo - mas amplio
+        - "mecatronica"
+        - "ingeniero electronica"
+        - "automatizacion industrial"
+        - "robotica"
+        - "machine learning"
+        - "inteligencia artificial"
+        - "data science"
+        - "analista datos"
+        - "Power BI"
+        - "trainee ingenieria"
+        - "trainee electronica"
     - name: linkedin
       enabled: true
+      experience_levels: ["1"]
       search_terms:
-        - "practicante mecatronica Peru"
-        - "intern AI Lima"
-        - "intern machine learning Peru"
-        - "practicante robotica Lima"
-        - "intern data science Peru"
+        # Español - amplio
+        - "mecatronica"
+        - "robotica"
+        - "automatizacion industrial"
+        - "automatizacion"
+        - "electronica"
+        - "electronica industrial"
+        - "ingenieria"
+        - "practicante ingenieria"
+        - "trainee ingenieria"
+        - "machine learning"
+        - "inteligencia artificial"
+        - "data science"
+        - "data analyst"
+        - "business intelligence"
+        - "analista datos"
+        - "Power BI"
+        - "IoT"
+        - "PLC"
+        - "instrumentacion"
+        - "mantenimiento"
+        - "control industrial"
+        - "programador Python"
+        # Ingles
+        - "intern engineering"
+        - "intern robotics"
+        - "intern AI"
+        - "intern machine learning"
+        - "intern data science"
+        - "intern electronics"
+        - "intern automation"
+        - "trainee engineering"
+        - "mechatronics"
+        - "computer vision"
+        - "data analyst"
+        - "machine learning engineer"
+        - "automation engineer"
+        - "robotics engineer"
+        # Con ubicacion
+        - "Python Peru"
+        - "data science Peru"
+        - "AI Peru"
     - name: indeed
       enabled: true
       search_terms:
         - "practicante mecatronica"
+        - "practicante ingenieria"
+        - "practicante electronica"
+        - "practicante automatizacion"
         - "practicante inteligencia artificial"
-        - "intern robotics"
         - "practicante machine learning"
+        - "practicante data science"
+        - "mecatronica"
+        - "robotica"
+        - "automatizacion industrial"
+        - "machine learning"
+        - "data science"
+        - "intern robotics"
+        - "intern AI"
+        - "intern engineering"
+        - "electronica"
+        - "PLC"
+        - "Python"
     - name: bumeran
       enabled: false
       search_terms:
         - "practicante ingenieria"
         - "practicante mecatronica"
+        - "practicante electronica"
+        - "mecatronica"
+        - "robotica"
+        - "automatizacion"
+        - "machine learning"
     - name: gobierno
       enabled: true
       search_terms:
         - "practicante ingenieria"
         - "practicante mecatronica"
+        - "practicante electronica"
+        - "ingenieria"
+        - "electronica"
+        - "automatizacion"
+        - "sistemas"
+        - "tecnologia"
+        - "mantenimiento"
     - name: company_careers
       enabled: true
       companies:
@@ -98,6 +224,14 @@ search:
       search_terms:
         - "intern"
         - "practicante"
+        - "trainee"
+        - "engineering"
+        - "robotics"
+        - "automation"
+        - "electronics"
+        - "data"
+        - "AI"
+        - "IoT"
 
 claude:
   model: "claude-haiku-4-5-20251001"
