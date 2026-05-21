@@ -119,6 +119,19 @@ header .subtitle { color: var(--text-muted); font-size: 0.85rem; }
 
   <div class="profiles" id="profiles"></div>
 
+  <div id="keywordSearch" style="background:var(--surface);padding:16px 20px;border-radius:10px;margin-bottom:16px;border:1px solid var(--border);display:none;gap:12px;align-items:center;flex-wrap:wrap">
+    <label style="color:var(--text-muted);font-size:0.85rem;font-weight:600;white-space:nowrap">Busqueda personalizada:</label>
+    <input type="text" id="keywordInput" placeholder="Ej: python developer, data engineer, IoT" style="flex:1;min-width:250px;background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:6px;font-size:0.85rem">
+    <select id="keywordSource" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 10px;border-radius:6px;font-size:0.85rem">
+      <option value="all">Todas las fuentes</option>
+      <option value="computrabajo">CompuTrabajo</option>
+      <option value="linkedin">LinkedIn</option>
+      <option value="indeed">Indeed</option>
+      <option value="getonboard">GetOnBoard</option>
+    </select>
+    <button class="btn btn-primary" onclick="searchByKeywords()" id="keywordBtn" style="padding:8px 16px;font-size:0.85rem">Buscar</button>
+  </div>
+
   <div class="claude-banner" id="claudeBanner"></div>
 
   <div class="status-bar" id="statusBar">
@@ -265,6 +278,75 @@ function renderProfiles(profiles) {
   }
 }
 
+async function searchByKeywords() {
+  const input = document.getElementById('keywordInput').value.trim();
+  if (!input || !currentProfile || searching) return;
+
+  searching = true;
+  document.getElementById('keywordBtn').disabled = true;
+  document.getElementById('keywordBtn').textContent = 'Buscando...';
+
+  const statusBar = document.getElementById('statusBar');
+  const statusText = document.getElementById('statusText');
+  const progressFill = document.getElementById('progressFill');
+  statusBar.classList.add('visible');
+  progressFill.style.width = '0%';
+
+  const selectedSource = document.getElementById('keywordSource').value;
+  const sources = selectedSource === 'all' ? ['computrabajo', 'linkedin', 'indeed', 'getonboard'] : [selectedSource];
+  const encoded = encodeURIComponent(input);
+  let newJobs = [];
+  let completed = 0;
+
+  for (const source of sources) {
+    statusText.textContent = `Buscando "${input}" en ${source}...`;
+    progressFill.style.width = `${(completed / sources.length) * 100}%`;
+
+    try {
+      const resp = await fetch(`${API}/api/search/${currentProfile}/${source}/keywords?q=${encoded}&max_pages=2`);
+      const data = await resp.json();
+      if (data.jobs && data.jobs.length > 0) {
+        newJobs.push(...data.jobs);
+        statusText.textContent = `${source}: ${data.jobs.length} encontrados`;
+      } else {
+        statusText.textContent = `${source}: sin resultados`;
+      }
+    } catch (e) {
+      statusText.textContent = `${source}: error - ${e.message}`;
+    }
+    completed++;
+    progressFill.style.width = `${(completed / sources.length) * 100}%`;
+  }
+
+  const existingUrls = new Set(allJobs.map(j => j.url));
+  let added = 0;
+  for (const job of newJobs) {
+    if (!existingUrls.has(job.url)) {
+      allJobs.push(job);
+      existingUrls.add(job.url);
+      added++;
+    }
+  }
+
+  preFilterSeniorTitles();
+  sortJobs();
+  renderJobs();
+  updateStats();
+  updateSourceFilter();
+
+  statusText.textContent = `Keyword "${input}": ${newJobs.length} encontrados, ${added} nuevos agregados.`;
+  progressFill.style.width = '100%';
+
+  if (added > 0 && hasApiKey()) {
+    statusText.textContent += ' Analizando con Claude...';
+    await twoPassAnalysis(currentProfile);
+  }
+
+  document.getElementById('keywordBtn').disabled = false;
+  document.getElementById('keywordBtn').textContent = 'Buscar';
+  searching = false;
+}
+
 async function startSearch(profile) {
   if (searching) return;
   searching = true;
@@ -272,6 +354,7 @@ async function startSearch(profile) {
   allJobs = [];
 
   document.querySelectorAll('.btn-primary').forEach(b => b.disabled = true);
+  document.getElementById('keywordSearch').style.display = 'flex';
 
   const statusBar = document.getElementById('statusBar');
   const statusText = document.getElementById('statusText');
@@ -323,13 +406,15 @@ async function startSearch(profile) {
   updateStats();
   updateSourceFilter();
 
-  if (allJobs.length > 0) {
+  if (allJobs.length > 0 && hasApiKey()) {
     const skipped = allJobs.filter(j => j.rec === 'SKIP').length;
     const pending = allJobs.length - skipped;
-    statusText.textContent = `${allJobs.length} trabajos encontrados. ${skipped} descartados por titulo. Analizando ${pending} con Claude...`;
+    statusText.textContent = `${allJobs.length} trabajos. ${skipped} descartados por titulo. Paso 1: filtrando ${pending} con Claude...`;
     banner.className = 'claude-banner visible';
-    banner.textContent = 'Claude AI esta analizando la relevancia de cada trabajo...';
-    await analyzeWithClaude(profile);
+    banner.textContent = 'Paso 1: Claude filtra trabajos irrelevantes. Paso 2: scoring detallado de los relevantes.';
+    await twoPassAnalysis(profile);
+  } else if (allJobs.length > 0) {
+    statusText.textContent = `${allJobs.length} trabajos encontrados. Configura API key para analisis con Claude.`;
   } else {
     statusText.textContent = 'No se encontraron trabajos. Intenta de nuevo mas tarde.';
   }
@@ -391,6 +476,111 @@ function showAnalyzeButton(profile) {
 }
 
 const REC_ORDER = { 'APPLY_NOW': 0, 'CONSIDER': 1, 'SKIP': 2, 'UNSCORED': 3 };
+
+async function twoPassAnalysis(profile) {
+  const statusText = document.getElementById('statusText');
+  const progressFill = document.getElementById('progressFill');
+  const pending = allJobs.filter(j => !j.analysis);
+
+  // === PASO 1: Filtro rapido ===
+  let filtered = 0;
+  let relevant = [];
+  let irrelevant = 0;
+
+  for (let i = 0; i < allJobs.length; i++) {
+    if (allJobs[i].analysis) continue;
+
+    filtered++;
+    statusText.textContent = `Paso 1 — Filtrando: ${filtered}/${pending.length}...`;
+    progressFill.style.width = `${(filtered / pending.length) * 50}%`;
+
+    try {
+      const resp = await fetch(`${API}/api/filter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders() },
+        body: JSON.stringify({ profile, job: allJobs[i] }),
+      });
+      const data = await resp.json();
+
+      if (!data.relevant) {
+        allJobs[i].analysis = {
+          relevance_score: 5,
+          reasoning: `Filtrado por Claude: ${data.reason}`,
+          summary: `${allJobs[i].title} en ${allJobs[i].company}`,
+          matching_skills: [],
+          missing_skills: [],
+          recommendation: 'SKIP',
+        };
+        allJobs[i].score = 5;
+        allJobs[i].rec = 'SKIP';
+        irrelevant++;
+      } else {
+        relevant.push(i);
+      }
+
+      if (filtered % 5 === 0) {
+        sortJobs();
+        renderJobs();
+        updateStats();
+      }
+    } catch (e) {
+      relevant.push(i);
+      console.error('Filter error:', e);
+    }
+  }
+
+  sortJobs();
+  renderJobs();
+  updateStats();
+
+  statusText.textContent = `Paso 1 completado: ${irrelevant} irrelevantes descartados, ${relevant.length} pasan a scoring detallado...`;
+
+  // === PASO 2: Scoring detallado solo de los relevantes ===
+  let scored = 0;
+
+  for (const idx of relevant) {
+    scored++;
+    statusText.textContent = `Paso 2 — Scoring: ${scored}/${relevant.length}...`;
+    progressFill.style.width = `${50 + (scored / relevant.length) * 50}%`;
+
+    try {
+      const resp = await fetch(`${API}/api/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders() },
+        body: JSON.stringify({ profile, job: allJobs[idx] }),
+      });
+      const data = await resp.json();
+
+      if (data.analysis) {
+        allJobs[idx].analysis = data.analysis;
+        allJobs[idx].score = data.analysis.relevance_score;
+        allJobs[idx].rec = data.analysis.recommendation;
+      }
+
+      if (scored % 3 === 0 || scored === relevant.length) {
+        sortJobs();
+        renderJobs();
+        updateStats();
+      }
+    } catch (e) {
+      console.error('Score error:', e);
+    }
+  }
+
+  sortJobs();
+  renderJobs();
+  updateStats();
+
+  const applied = allJobs.filter(j => j.rec === 'APPLY_NOW').length;
+  const considered = allJobs.filter(j => j.rec === 'CONSIDER').length;
+  const skipped = allJobs.filter(j => j.rec === 'SKIP').length;
+  statusText.textContent = `Listo: ${applied} Postular Ya, ${considered} Considerar, ${skipped} Omitir (${irrelevant} filtrados en paso 1)`;
+  progressFill.style.width = '100%';
+
+  const banner = document.getElementById('claudeBanner');
+  banner.className = 'claude-banner visible';
+  banner.textContent = `Analisis completo. ${irrelevant} descartados en filtro rapido, ${relevant.length} analizados en detalle.`;
+}
 
 function sortJobs() {
   allJobs.sort((a, b) => {

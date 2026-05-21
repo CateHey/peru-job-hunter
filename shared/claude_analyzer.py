@@ -67,6 +67,19 @@ def is_api_available() -> bool:
     return bool(key and key != "sk-ant-your-key-here")
 
 
+FILTER_PROMPT = """Eres un filtro rapido de relevancia laboral. Determina si vale la pena analizar este puesto en detalle para el candidato.
+
+Responde SOLO con un objeto JSON valido (sin markdown, sin ```):
+
+{"relevant": true/false, "reason": "<1 oracion corta>"}
+
+REGLAS:
+- false si el CAMPO profesional no coincide (ej: hospitalario, bancario-comercial, ventas, marketing, legal, contable para un perfil tecnico)
+- false si el NIVEL es claramente superior (Jefe, Gerente, Director, Senior, Lead, Supervisor, Profesor, 5+ años)
+- true si hay conexion razonable entre el puesto y el perfil del candidato
+- En caso de duda, responde true (el segundo analisis decidira)"""
+
+
 def _get_prompt(custom_prompt: str | None) -> str:
     return custom_prompt if custom_prompt else DEFAULT_SYSTEM_PROMPT
 
@@ -121,6 +134,46 @@ def _parse_analysis(raw: str, job_id: str) -> Optional[AnalysisResult]:
     except Exception as e:
         logger.warning("Error parseando respuesta Claude para job %s: %s", job_id, e)
         return None
+
+
+def filter_single_job(
+    job: Job,
+    profile: ClientProfile,
+    model: str = "claude-haiku-4-5-20251001",
+) -> dict:
+    if _is_senior_title(job.title, profile.experience_level):
+        return {"relevant": False, "reason": f"Titulo '{job.title}' es de nivel senior"}
+
+    if not is_api_available():
+        return {"relevant": True, "reason": "Sin API key, no se puede filtrar"}
+
+    try:
+        import anthropic
+        client = anthropic.Anthropic()
+
+        user_msg = f"CANDIDATO: {profile.name} — {profile.description}\nNivel: {profile.experience_level}\nSkills: {', '.join(profile.skills[:15])}\n\nPUESTO: {job.title} en {job.company}\nUbicacion: {job.location}\nDescripcion: {job.description[:500] if job.description else 'No disponible'}"
+
+        resp = client.messages.create(
+            model=model,
+            max_tokens=100,
+            system=[{"type": "text", "text": FILTER_PROMPT, "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user_msg}],
+        )
+
+        raw = resp.content[0].text if resp.content else ""
+        text = raw.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+            if text.endswith("```"):
+                text = text[:-3]
+            text = text.strip()
+
+        data = json.loads(text)
+        return {"relevant": bool(data.get("relevant", True)), "reason": str(data.get("reason", ""))}
+
+    except Exception as e:
+        logger.warning("Error en filtro rapido para '%s': %s", job.title, e)
+        return {"relevant": True, "reason": f"Error en filtro: {e}"}
 
 
 def analyze_single_job(

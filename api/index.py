@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from shared.claude_analyzer import analyze_single_job, is_api_available
+from shared.claude_analyzer import analyze_single_job, filter_single_job, is_api_available
 from shared.config_loader import load_config
 from shared.deduplicator import deduplicate_jobs
 from shared.models import Job
@@ -208,3 +208,78 @@ async def analyze_job_endpoint(request: Request):
 
     result = enriched.analysis.model_dump(mode="json") if enriched.analysis else None
     return {"analysis": result}
+
+
+@app.post("/api/filter")
+async def filter_job_endpoint(request: Request):
+    payload = await request.json()
+
+    api_key = request.headers.get("x-api-key") or payload.get("api_key")
+    _use_client_key(api_key)
+
+    profile_key = payload.get("profile", "mechatronics")
+    if profile_key not in PROFILES:
+        return JSONResponse({"error": "Perfil no encontrado"}, status_code=404)
+
+    config = load_config(PROFILES[profile_key])
+
+    try:
+        job = Job(**payload["job"])
+    except Exception as e:
+        return JSONResponse({"error": f"Job invalido: {e}"}, status_code=400)
+
+    result = filter_single_job(
+        job,
+        config.profile,
+        model=config.claude.get("model", "claude-haiku-4-5-20251001"),
+    )
+    return result
+
+
+@app.get("/api/search/{profile}/{source}/keywords")
+async def search_by_keywords(
+    profile: str,
+    source: str,
+    q: str = Query(..., min_length=1, max_length=200),
+    max_pages: int = Query(default=2, ge=1, le=5),
+):
+    if profile not in PROFILES:
+        return JSONResponse({"error": f"Perfil '{profile}' no encontrado"}, status_code=404)
+
+    keywords = [k.strip() for k in q.split(",") if k.strip()]
+    if not keywords:
+        return JSONResponse({"error": "No se proporcionaron keywords"}, status_code=400)
+
+    jobs: list[Job] = []
+
+    try:
+        if source == "computrabajo":
+            from scrapers.computrabajo import CompuTrabajoScraper
+            scraper = CompuTrabajoScraper(rate_limiter, max_pages=max_pages)
+            jobs = await scraper.search_all_terms(keywords)
+
+        elif source == "linkedin":
+            from scrapers.linkedin_guest import LinkedInGuestScraper
+            scraper = LinkedInGuestScraper(rate_limiter, max_pages=max_pages)
+            jobs = await scraper.search_all_terms(keywords)
+
+        elif source == "indeed":
+            from scrapers.indeed_jobspy import IndeedJobSpyScraper
+            scraper = IndeedJobSpyScraper(rate_limiter, results_wanted=30)
+            jobs = await scraper.search_all_terms(keywords)
+
+        elif source == "getonboard":
+            from scrapers.getonboard import GetOnBoardScraper
+            scraper = GetOnBoardScraper(rate_limiter)
+            jobs = await scraper.search_all_terms(keywords)
+
+        else:
+            return JSONResponse(
+                {"error": f"Fuente '{source}' no soportada para busqueda por keywords"},
+                status_code=400,
+            )
+
+    except Exception as e:
+        return JSONResponse({"error": str(e), "jobs": []}, status_code=200)
+
+    return {"source": source, "keywords": keywords, "count": len(jobs), "jobs": _jobs_to_dicts(jobs)}
