@@ -112,6 +112,7 @@ header .subtitle { color: var(--text-muted); font-size: 0.85rem; }
   <div class="api-key-section" style="background:var(--surface);padding:16px 20px;border-radius:10px;margin-bottom:16px;border:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
     <label style="color:var(--text-muted);font-size:0.85rem;font-weight:600;white-space:nowrap">Claude API Key (opcional):</label>
     <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1;min-width:200px;background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:6px;font-size:0.85rem;font-family:monospace">
+    <button class="btn btn-primary" onclick="saveKey()" style="padding:8px 12px;font-size:0.8rem">Guardar Key</button>
     <button class="btn btn-secondary" onclick="toggleKeyVisibility()" style="padding:8px 12px;font-size:0.8rem" id="toggleKeyBtn">Mostrar</button>
     <span id="keyStatus" style="font-size:0.8rem;color:var(--text-muted)"></span>
   </div>
@@ -173,7 +174,7 @@ function getApiKey() {
 
 function hasApiKey() {
   const key = getApiKey();
-  return key.length > 10 && key.startsWith('sk-ant-');
+  return key.length > 20;
 }
 
 function getHeaders() {
@@ -192,22 +193,33 @@ function toggleKeyVisibility() {
 
 function saveKey() {
   const key = getApiKey();
-  if (key) localStorage.setItem('anthropic_api_key', key);
-  else localStorage.removeItem('anthropic_api_key');
+  if (key) {
+    localStorage.setItem('anthropic_api_key', key);
+    claudeAvailable = hasApiKey();
+  } else {
+    localStorage.removeItem('anthropic_api_key');
+    claudeAvailable = false;
+  }
   updateKeyStatus();
 }
 
 function updateKeyStatus() {
   const el = document.getElementById('keyStatus');
   if (hasApiKey()) {
-    el.textContent = 'Key detectada';
+    el.textContent = 'Key guardada — las busquedas usaran Claude AI';
     el.style.color = 'var(--green)';
     if (allJobs.length > 0 && !searching && allJobs.some(j => !j.analysis)) {
-      el.textContent = 'Key detectada — click "Analizar" para evaluar trabajos';
+      el.textContent = 'Key guardada — click "Analizar con Claude" para evaluar trabajos';
     }
   } else {
-    el.textContent = 'Sin key = sin scores (opcional)';
-    el.style.color = 'var(--text-muted)';
+    const key = getApiKey();
+    if (key.length > 0 && key.length <= 20) {
+      el.textContent = 'Key muy corta — verifica que sea completa';
+      el.style.color = 'var(--yellow)';
+    } else {
+      el.textContent = 'Sin key = sin scores (opcional)';
+      el.style.color = 'var(--text-muted)';
+    }
   }
 }
 
@@ -340,7 +352,7 @@ function showAnalyzeButton(profile) {
   btn.textContent = 'Analizar con Claude';
   btn.onclick = async () => {
     if (!hasApiKey()) {
-      alert('Ingresa tu API key de Anthropic (sk-ant-...) en el campo de arriba');
+      alert('Ingresa tu API key de Anthropic y presiona "Guardar Key"');
       return;
     }
     btn.disabled = true;
