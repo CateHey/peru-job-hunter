@@ -190,36 +190,42 @@ function toggleKeyVisibility() {
   else { input.type = 'password'; btn.textContent = 'Mostrar'; }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('anthropic_api_key');
-  if (saved) document.getElementById('apiKeyInput').value = saved;
-
-  document.getElementById('apiKeyInput').addEventListener('change', () => {
-    const key = getApiKey();
-    if (key) localStorage.setItem('anthropic_api_key', key);
-    else localStorage.removeItem('anthropic_api_key');
-    updateKeyStatus();
-  });
-});
+function saveKey() {
+  const key = getApiKey();
+  if (key) localStorage.setItem('anthropic_api_key', key);
+  else localStorage.removeItem('anthropic_api_key');
+  updateKeyStatus();
+}
 
 function updateKeyStatus() {
   const el = document.getElementById('keyStatus');
   if (hasApiKey()) {
     el.textContent = 'Key detectada';
     el.style.color = 'var(--green)';
+    if (allJobs.length > 0 && !searching && allJobs.some(j => !j.analysis)) {
+      el.textContent = 'Key detectada — click "Analizar" para evaluar trabajos';
+    }
   } else {
-    el.textContent = 'Sin key = sin scores';
+    el.textContent = 'Sin key = sin scores (opcional)';
     el.style.color = 'var(--text-muted)';
   }
 }
 
 async function init() {
+  const saved = localStorage.getItem('anthropic_api_key');
+  if (saved) document.getElementById('apiKeyInput').value = saved;
+
+  const keyInput = document.getElementById('apiKeyInput');
+  keyInput.addEventListener('input', saveKey);
+  keyInput.addEventListener('change', saveKey);
+
+  updateKeyStatus();
+
   try {
     const resp = await fetch(`${API}/api/profiles`, { headers: getHeaders() });
     const data = await resp.json();
     claudeAvailable = data.claude_available || hasApiKey();
     renderProfiles(data.profiles);
-    updateKeyStatus();
   } catch (e) {
     document.getElementById('profiles').innerHTML = '<div class="empty"><h2>Error conectando con la API</h2><p>' + e.message + '</p></div>';
   }
@@ -300,7 +306,6 @@ async function startSearch(profile) {
     progressFill.style.width = `${(completed / sources.length) * 100}%`;
   }
 
-  statusText.textContent = `Busqueda completada: ${allJobs.length} trabajos encontrados`;
   progressFill.style.width = '100%';
 
   document.getElementById('stats').classList.add('visible');
@@ -308,12 +313,42 @@ async function startSearch(profile) {
   updateStats();
   updateSourceFilter();
 
-  if (claudeAvailable && allJobs.length > 0) {
+  if (hasApiKey() && allJobs.length > 0) {
+    statusText.textContent = `${allJobs.length} trabajos encontrados. Analizando con Claude...`;
     await analyzeWithClaude(profile);
+  } else if (allJobs.length > 0) {
+    statusText.textContent = `${allJobs.length} trabajos encontrados. Ingresa tu API key arriba y presiona "Analizar con Claude" para ver scores.`;
+    showAnalyzeButton(profile);
+  } else {
+    statusText.textContent = 'No se encontraron trabajos. Intenta de nuevo mas tarde.';
   }
 
   searching = false;
   document.querySelectorAll('.btn-primary').forEach(b => b.disabled = false);
+  updateKeyStatus();
+}
+
+function showAnalyzeButton(profile) {
+  const existing = document.getElementById('analyzeBtn');
+  if (existing) existing.remove();
+
+  const banner = document.getElementById('claudeBanner');
+  const btn = document.createElement('button');
+  btn.id = 'analyzeBtn';
+  btn.className = 'btn btn-primary';
+  btn.style.marginLeft = '12px';
+  btn.textContent = 'Analizar con Claude';
+  btn.onclick = async () => {
+    if (!hasApiKey()) {
+      alert('Ingresa tu API key de Anthropic (sk-ant-...) en el campo de arriba');
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Analizando...';
+    await analyzeWithClaude(profile);
+    btn.remove();
+  };
+  banner.appendChild(btn);
 }
 
 async function analyzeWithClaude(profile) {
