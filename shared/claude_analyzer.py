@@ -16,7 +16,7 @@ Responde SOLO con un objeto JSON válido (sin markdown, sin ```):
 
 {
   "relevance_score": <int 0-100>,
-  "reasoning": "<1 oración: POR QUÉ es o no es relevante>",
+  "reasoning": "<1-2 oraciones: POR QUÉ es o no es relevante. Explica tu razonamiento.>",
   "summary": "<resumen de 1-2 oraciones del puesto>",
   "matching_skills": ["skill1", "skill2"],
   "missing_skills": ["skill1", "skill2"],
@@ -25,10 +25,12 @@ Responde SOLO con un objeto JSON válido (sin markdown, sin ```):
 
 PROCESO DE RAZONAMIENTO:
 1. ¿El CAMPO del puesto coincide con el del candidato? (ej: "Distribución bancaria" NO es mecatrónica aunque diga "Analista")
-2. ¿El NIVEL es accesible? (Si dice "Sr", "Senior", "Lead", "5+ años" y el candidato es practicante/junior → SKIP)
+2. ¿El NIVEL es accesible para el candidato? REGLA ESTRICTA: si el título o descripción contiene "Jefe", "Gerente", "Director", "Coordinador", "Supervisor", "Líder", "Lead", "Head", "Manager", "Senior", "Sr.", "Semi-Senior", "Principal", "Arquitecto", "5+ años", "3+ años de experiencia" y el candidato es practicante/junior/trainee/intern → score <= 10, SKIP. Estos puestos NUNCA son para entry-level.
 3. ¿El candidato podría REALMENTE hacer este trabajo con sus skills y formación?
 
-IMPORTANTE: Una palabra genérica compartida ("analista", "técnico", "ingeniero", "junior") NO hace relevante un puesto. Lo que importa es: ¿este trabajo pertenece al MISMO MUNDO PROFESIONAL que el candidato?"""
+IMPORTANTE:
+- Una palabra genérica compartida ("analista", "técnico", "ingeniero", "junior") NO hace relevante un puesto. Lo que importa es: ¿este trabajo pertenece al MISMO MUNDO PROFESIONAL que el candidato?
+- El campo "reasoning" es OBLIGATORIO y debe explicar claramente por qué se dio esa puntuación. Si es SKIP, explica qué lo descalifica."""
 
 
 def is_api_available() -> bool:
@@ -81,6 +83,7 @@ def _parse_analysis(raw: str, job_id: str) -> Optional[AnalysisResult]:
         return AnalysisResult(
             job_id=job_id,
             relevance_score=max(0, min(100, int(data.get("relevance_score", 0)))),
+            reasoning=str(data.get("reasoning", "")),
             summary=str(data.get("summary", "")),
             matching_skills=data.get("matching_skills", []),
             missing_skills=data.get("missing_skills", []),

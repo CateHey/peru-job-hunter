@@ -430,6 +430,7 @@ function renderJobs() {
     const dateStr = job.date_posted ? new Date(job.date_posted).toLocaleDateString('es-PE') : '';
     const salary = job.salary || '';
     const jobType = job.job_type !== 'unknown' ? job.job_type : '';
+    const reasoning = analysis?.reasoning || '';
     const desc = analysis?.summary || (job.description ? job.description.substring(0, 200) + (job.description.length > 200 ? '...' : '') : '');
 
     const matchTags = (analysis?.matching_skills || []).slice(0, 5).map(s => `<span class="tag match">${s}</span>`).join('');
@@ -448,6 +449,7 @@ function renderJobs() {
           <span class="score-badge ${badgeClass}">${badgeText}</span>
         </div>
         ${metaParts ? `<div class="meta">${metaParts}</div>` : ''}
+        ${reasoning ? `<p class="summary" style="font-style:italic;color:var(--accent)">Claude: ${reasoning}</p>` : ''}
         ${desc ? `<p class="summary">${desc}</p>` : ''}
         <div class="tags">${matchTags}${missTags}${sourceTags}</div>
       </div>`;

@@ -49,6 +49,7 @@ class Job(BaseModel):
 class AnalysisResult(BaseModel):
     job_id: str
     relevance_score: int = Field(ge=0, le=100)
+    reasoning: str = ""
     summary: str
     matching_skills: list[str] = Field(default_factory=list)
     missing_skills: list[str] = Field(default_factory=list)
