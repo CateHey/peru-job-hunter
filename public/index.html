@@ -109,6 +109,13 @@ header .subtitle { color: var(--text-muted); font-size: 0.85rem; }
     </div>
   </header>
 
+  <div class="api-key-section" style="background:var(--surface);padding:16px 20px;border-radius:10px;margin-bottom:16px;border:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <label style="color:var(--text-muted);font-size:0.85rem;font-weight:600;white-space:nowrap">Claude API Key (opcional):</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1;min-width:200px;background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:6px;font-size:0.85rem;font-family:monospace">
+    <button class="btn btn-secondary" onclick="toggleKeyVisibility()" style="padding:8px 12px;font-size:0.8rem" id="toggleKeyBtn">Mostrar</button>
+    <span id="keyStatus" style="font-size:0.8rem;color:var(--text-muted)"></span>
+  </div>
+
   <div class="profiles" id="profiles"></div>
 
   <div class="claude-banner" id="claudeBanner"></div>
@@ -160,12 +167,59 @@ let claudeAvailable = false;
 let currentProfile = null;
 let searching = false;
 
+function getApiKey() {
+  return (document.getElementById('apiKeyInput').value || '').trim();
+}
+
+function hasApiKey() {
+  const key = getApiKey();
+  return key.length > 10 && key.startsWith('sk-ant-');
+}
+
+function getHeaders() {
+  const headers = {};
+  const key = getApiKey();
+  if (key) headers['X-Api-Key'] = key;
+  return headers;
+}
+
+function toggleKeyVisibility() {
+  const input = document.getElementById('apiKeyInput');
+  const btn = document.getElementById('toggleKeyBtn');
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Ocultar'; }
+  else { input.type = 'password'; btn.textContent = 'Mostrar'; }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('anthropic_api_key');
+  if (saved) document.getElementById('apiKeyInput').value = saved;
+
+  document.getElementById('apiKeyInput').addEventListener('change', () => {
+    const key = getApiKey();
+    if (key) localStorage.setItem('anthropic_api_key', key);
+    else localStorage.removeItem('anthropic_api_key');
+    updateKeyStatus();
+  });
+});
+
+function updateKeyStatus() {
+  const el = document.getElementById('keyStatus');
+  if (hasApiKey()) {
+    el.textContent = 'Key detectada';
+    el.style.color = 'var(--green)';
+  } else {
+    el.textContent = 'Sin key = sin scores';
+    el.style.color = 'var(--text-muted)';
+  }
+}
+
 async function init() {
   try {
-    const resp = await fetch(`${API}/api/profiles`);
+    const resp = await fetch(`${API}/api/profiles`, { headers: getHeaders() });
     const data = await resp.json();
-    claudeAvailable = data.claude_available;
+    claudeAvailable = data.claude_available || hasApiKey();
     renderProfiles(data.profiles);
+    updateKeyStatus();
   } catch (e) {
     document.getElementById('profiles').innerHTML = '<div class="empty"><h2>Error conectando con la API</h2><p>' + e.message + '</p></div>';
   }
@@ -210,10 +264,11 @@ async function startSearch(profile) {
   document.getElementById('jobsGrid').innerHTML = '';
   document.getElementById('jobCount').style.display = 'none';
 
+  claudeAvailable = hasApiKey();
   const banner = document.getElementById('claudeBanner');
   if (!claudeAvailable) {
     banner.className = 'claude-banner visible no-key';
-    banner.textContent = 'API key de Claude no configurada. Los trabajos se mostraran sin score de relevancia.';
+    banner.textContent = 'Sin API key de Claude. Ingresa tu key arriba para activar el analisis de relevancia, o busca sin scores.';
   } else {
     banner.className = 'claude-banner visible';
     banner.textContent = 'Claude AI analizara la relevancia de cada trabajo despues de la busqueda.';
@@ -275,7 +330,7 @@ async function analyzeWithClaude(profile) {
     try {
       const resp = await fetch(`${API}/api/analyze`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getHeaders() },
         body: JSON.stringify({ profile, job: allJobs[i] }),
       });
       const data = await resp.json();

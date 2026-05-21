@@ -1,13 +1,17 @@
 {
   "version": 2,
-  "buildCommand": "",
-  "outputDirectory": "public",
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 10
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
     }
-  },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.py" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "api/index.py" },
+    { "src": "/(.*)", "dest": "public/$1" }
   ]
 }

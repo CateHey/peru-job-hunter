@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import asyncio
-import json
 import os
 import sys
 from pathlib import Path
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -15,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from shared.claude_analyzer import analyze_single_job, is_api_available
 from shared.config_loader import load_config
 from shared.deduplicator import deduplicate_jobs
-from shared.models import EnrichedJob, Job
+from shared.models import Job
 from shared.rate_limiter import RateLimiter
 
 app = FastAPI()
@@ -41,19 +39,15 @@ def _jobs_to_dicts(jobs: list[Job]) -> list[dict]:
     return [j.model_dump(mode="json") for j in jobs]
 
 
-def _enriched_to_dicts(enriched: list[EnrichedJob]) -> list[dict]:
-    results = []
-    for ej in enriched:
-        d = ej.job.model_dump(mode="json")
-        d["analysis"] = ej.analysis.model_dump(mode="json") if ej.analysis else None
-        d["score"] = ej.score
-        d["rec"] = ej.rec
-        results.append(d)
-    return results
+def _use_client_key(api_key: str | None):
+    if api_key and api_key.startswith("sk-ant-"):
+        os.environ["ANTHROPIC_API_KEY"] = api_key
 
 
 @app.get("/api/profiles")
-async def get_profiles():
+async def get_profiles(request: Request):
+    _use_client_key(request.headers.get("x-api-key"))
+
     profiles = {}
     for name, path in PROFILES.items():
         try:
@@ -121,7 +115,9 @@ async def search_source(
 
 
 @app.get("/api/search/{profile}")
-async def search_all(profile: str):
+async def search_all(profile: str, request: Request):
+    _use_client_key(request.headers.get("x-api-key"))
+
     if profile not in PROFILES:
         return JSONResponse({"error": f"Perfil '{profile}' no encontrado"}, status_code=404)
 
@@ -171,10 +167,15 @@ async def search_all(profile: str):
 
 
 @app.post("/api/analyze")
-async def analyze_job_endpoint(payload: dict):
+async def analyze_job_endpoint(request: Request):
+    payload = await request.json()
+
+    api_key = request.headers.get("x-api-key") or payload.get("api_key")
+    _use_client_key(api_key)
+
     if not is_api_available():
         return JSONResponse(
-            {"error": "ANTHROPIC_API_KEY no configurada", "analysis": None},
+            {"error": "API key no proporcionada", "analysis": None},
             status_code=200,
         )
 
