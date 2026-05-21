@@ -18,7 +18,7 @@ Ambos programas comparten la misma libreria base (`shared/`) y la misma API key 
 ## Requisitos Previos
 
 - **Python 3.10+** (recomendado 3.11 o 3.12)
-- **Google Chrome** instalado (necesario para los scrapers que usan Selenium: Bumeran, Gobierno, algunas career pages)
+- **Google Chrome** instalado (necesario para los scrapers que usan Selenium: Laborum, Gobierno, algunas career pages)
 - **Una cuenta en Anthropic** para obtener tu API key de Claude (https://console.anthropic.com/)
 
 ---
@@ -122,7 +122,24 @@ python -m infra_hunter.run --no-batch
 
 ---
 
-## Resultado
+## Web UI (Vercel)
+
+El proyecto incluye una interfaz web desplegable en Vercel:
+
+- **Busqueda por perfil** — selecciona mecatronics o infra y busca en todas las fuentes habilitadas
+- **Busqueda por keywords** — ingresa terminos personalizados y elige la fuente
+- **Analisis automatico** — dos pasadas de Claude: filtro rapido + scoring detallado
+- **Pre-filtro de seniority** — descarta automaticamente puestos de Jefe, Gerente, Senior, etc.
+- **Clasificacion** — los resultados se ordenan: Postular Ya > Considerar > Omitir
+
+Para desplegar:
+1. Conecta el repo a Vercel
+2. Configura `ANTHROPIC_API_KEY` como variable de entorno en Vercel
+3. Los visitantes no necesitan pegar API key si el servidor tiene una configurada
+
+---
+
+## Resultado (CLI)
 
 Cada ejecucion genera un archivo HTML en:
 
@@ -146,7 +163,8 @@ El dashboard se abre automaticamente en tu navegador. Incluye:
 | CompuTrabajo | Si | HTTP + BS4 | Principal. 133K+ ofertas Peru |
 | LinkedIn | Si | Guest API | Sin login requerido |
 | Indeed | Si | python-jobspy | Wrapper automatico |
-| Bumeran | No (opcional) | Selenium | Necesita Chrome. Habilitar en config.yaml |
+| GetOnBoard | Si | API JSON | Plataforma tech LATAM, sin scraping |
+| Laborum | No (opcional) | Selenium | Necesita Chrome. Habilitar en config.yaml |
 | Gobierno Peru | Si | Selenium | Best-effort, puede fallar |
 | Career Pages | Si | HTTP/Selenium | Configurable por empresa |
 
@@ -181,7 +199,14 @@ peru_job_hunter/
 ├── .env.example                # Plantilla del .env
 ├── .gitignore
 ├── requirements.txt
+├── vercel.json                 # Config Vercel (API + static)
 ├── README.md
+│
+├── api/                        # Backend FastAPI (Vercel serverless)
+│   └── index.py                # Endpoints: search, analyze, filter, keywords
+│
+├── public/                     # Frontend SPA
+│   └── index.html              # Dashboard web con busqueda y analisis
 │
 ├── shared/                     # Libreria compartida
 │   ├── models.py               # Modelos de datos (Job, AnalysisResult, etc.)
@@ -199,7 +224,8 @@ peru_job_hunter/
 │   ├── computrabajo.py
 │   ├── linkedin_guest.py
 │   ├── indeed_jobspy.py
-│   ├── bumeran.py
+│   ├── getonboard.py
+│   ├── laborum.py
 │   ├── gobierno_peru.py
 │   ├── company_careers.py
 │   └── company_configs/        # Config YAML por empresa

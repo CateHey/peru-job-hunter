@@ -105,16 +105,23 @@ header .subtitle { color: var(--text-muted); font-size: 0.85rem; }
       <p class="subtitle">Busqueda automatizada de trabajos en TI, Robotica y Electronica</p>
     </div>
     <div class="header-actions">
+      <button class="btn btn-secondary" onclick="toggleSettings()" title="Settings" style="font-size:1.1rem;padding:6px 10px">&#9881;</button>
       <button class="btn btn-secondary" onclick="toggleTheme()">Tema</button>
     </div>
   </header>
 
-  <div class="api-key-section" style="background:var(--surface);padding:16px 20px;border-radius:10px;margin-bottom:16px;border:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-    <label style="color:var(--text-muted);font-size:0.85rem;font-weight:600;white-space:nowrap">Claude API Key (opcional):</label>
-    <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1;min-width:200px;background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:6px;font-size:0.85rem;font-family:monospace">
-    <button class="btn btn-primary" onclick="saveKey()" style="padding:8px 12px;font-size:0.8rem">Guardar Key</button>
-    <button class="btn btn-secondary" onclick="toggleKeyVisibility()" style="padding:8px 12px;font-size:0.8rem" id="toggleKeyBtn">Mostrar</button>
-    <span id="keyStatus" style="font-size:0.8rem;color:var(--text-muted)"></span>
+  <div id="settingsPanel" style="display:none;background:var(--surface);padding:16px 20px;border-radius:10px;margin-bottom:16px;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 style="margin:0;font-size:0.95rem;color:var(--text)">Settings</h3>
+      <button class="btn btn-secondary" onclick="toggleSettings()" style="padding:4px 8px;font-size:0.75rem">Cerrar</button>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <label style="color:var(--text-muted);font-size:0.85rem;font-weight:600;white-space:nowrap">Claude API Key (opcional):</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." style="flex:1;min-width:200px;background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:6px;font-size:0.85rem;font-family:monospace">
+      <button class="btn btn-primary" onclick="saveKey()" style="padding:8px 12px;font-size:0.8rem">Guardar Key</button>
+      <button class="btn btn-secondary" onclick="toggleKeyVisibility()" style="padding:8px 12px;font-size:0.8rem" id="toggleKeyBtn">Mostrar</button>
+      <span id="keyStatus" style="font-size:0.8rem;color:var(--text-muted)"></span>
+    </div>
   </div>
 
   <div class="profiles" id="profiles"></div>
@@ -731,6 +738,11 @@ function applyFilters() {
 
 function toggleTheme() {
   document.body.dataset.theme = document.body.dataset.theme === 'light' ? '' : 'light';
+}
+
+function toggleSettings() {
+  const panel = document.getElementById('settingsPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
 }
 
 init();
